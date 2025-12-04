@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Shooting Game Q BetaTest</title>
+<title>SGQ Beta</title>
 
 <style>
 body {
@@ -15,12 +15,12 @@ body {
     color: white;
     font-family: Arial;
 }
+
 canvas {
-    border: 3px solid #fff;
     background: black;
 }
 
-/* MENU STARTOWE */
+/* MENU START */
 #menu {
     position: absolute;
     top: 0; left: 0;
@@ -41,21 +41,35 @@ button {
     border-radius: 6px;
     cursor: pointer;
 }
-button:hover {
-    background: #333;
-    color: white;
-}
+button:hover { background: #333; color: white; }
 
 /* HUD */
 #hud {
-    position: absolute;
+    position:absolute;
     top: 10px;
     width: 100%;
-    text-align: center;
-    font-size: 18px;
-    display: flex;
-    justify-content: space-between;
+    text-align:center;
+    display:flex;
+    justify-content:space-between;
     padding: 0 20px;
+}
+
+/* Pasek HP gracza */
+#playerHPcontainer {
+    position:absolute;
+    bottom:20px;
+    left:50%;
+    transform:translateX(-50%);
+    width:300px;
+    height:20px;
+    background:#333;
+    border-radius:10px;
+}
+#playerHP {
+    height:100%;
+    width:100%;
+    background:lime;
+    border-radius:10px;
 }
 </style>
 </head>
@@ -63,7 +77,7 @@ button:hover {
 <body>
 
 <div id="menu">
-    <h1>Strzelanka 2D</h1>
+    <h1>SGQ Beta</h1>
     <p>Wybierz poziom trudności:</p>
     <button onclick="startGame(1)">Łatwy</button>
     <button onclick="startGame(2)">Średni</button>
@@ -72,10 +86,13 @@ button:hover {
 
 <div id="hud">
     <div id="score">Punkty: 0</div>
-    <div id="lives">Życia: 3</div>
+    <div id="lives">Tarcza: 0</div>
 </div>
 
-<canvas id="gameCanvas" width="600" height="400"></canvas>
+<!-- Pasek HP -->
+<div id="playerHPcontainer"><div id="playerHP"></div></div>
+
+<canvas id="gameCanvas" width="700" height="500"></canvas>
 
 <script>
 const canvas = document.getElementById("gameCanvas");
@@ -83,12 +100,16 @@ const ctx = canvas.getContext("2d");
 
 let difficulty = 1;
 let score = 0;
-let lives = 3;
+let shields = 0;
+let playerHP = 100;
 
 let player;
 let bullets = [];
 let enemies = [];
 let enemySpawnTimer = 0;
+
+let explosions = [];
+let loot = [];
 
 let left = false;
 let right = false;
@@ -105,23 +126,29 @@ document.addEventListener("click", shoot);
 
 let shootSound = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
 let hitSound   = new Audio("https://actions.google.com/sounds/v1/cartoon/pop.ogg");
+let pickSound  = new Audio("https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg");
 
 function startGame(diff) {
     difficulty = diff;
     score = 0;
-    lives = 3;
-    document.getElementById("score").textContent = "Punkty: 0";
-    document.getElementById("lives").textContent = "Życia: 3";
+    shields = 0;
+    playerHP = 100;
 
     bullets = [];
     enemies = [];
+    loot = [];
+    explosions = [];
+
+    document.getElementById("score").textContent = "Punkty: 0";
+    document.getElementById("lives").textContent = "Tarcza: 0";
+    updatePlayerHP();
 
     player = {
-        x: 280,
-        y: 360,
-        width: 40,
-        height: 20,
-        speed: 5
+        x: canvas.width/2 - 20,
+        y: canvas.height - 60,
+        w: 40,
+        h: 20,
+        speed: 6
     };
 
     document.getElementById("menu").style.display = "none";
@@ -131,11 +158,11 @@ function startGame(diff) {
 
 function shoot() {
     bullets.push({
-        x: player.x + player.width/2 - 2,
+        x: player.x + player.w/2 - 2,
         y: player.y,
-        width: 4,
-        height: 10,
-        speed: 7
+        w: 4,
+        h: 10,
+        speed: 8
     });
 
     shootSound.play();
@@ -143,78 +170,138 @@ function shoot() {
 
 function spawnEnemy() {
     enemies.push({
-        x: Math.random() * 560,
+        x: Math.random() * (canvas.width - 40),
         y: -20,
-        width: 40,
-        height: 20,
-        speed: 1 + difficulty * 1.5
+        w: 40,
+        h: 20,
+        speed: 1 + difficulty * 1.4,
+        hp: 30 + difficulty * 20,
+        maxhp: 30 + difficulty * 20
+    });
+}
+
+function updatePlayerHP() {
+    document.getElementById("playerHP").style.width = playerHP + "%";
+    if (playerHP < 60) document.getElementById("playerHP").style.background = "yellow";
+    if (playerHP < 30) document.getElementById("playerHP").style.background = "red";
+}
+
+function addExplosion(x, y) {
+    explosions.push({
+        x, y,
+        r: 5,
+        maxR: 25,
+        alpha: 1
     });
 }
 
 function update() {
     if (left && player.x > 0) player.x -= player.speed;
-    if (right && player.x < canvas.width - player.width) player.x += player.speed;
+    if (right && player.x < canvas.width - player.w) player.x += player.speed;
 
-    bullets.forEach((b, i) => {
-        b.y -= b.speed;
-        if (b.y < 0) bullets.splice(i, 1);
-    });
+    bullets = bullets.filter(b => b.y > -20);
+    bullets.forEach(b => b.y -= b.speed);
 
     enemies.forEach((e, i) => {
         e.y += e.speed;
 
-        if (e.y > canvas.height) {
+        if (e.y > canvas.height + 50) {
             enemies.splice(i, 1);
-            lives--;
-            document.getElementById("lives").textContent = "Życia: " + lives;
-
-            if (lives <= 0) {
-                alert("Koniec gry! Twój wynik: " + score);
-                location.reload();
-            }
         }
+    });
 
+    loot.forEach((l, i) => {
+        l.y += 2;
+        if (l.y > canvas.height) loot.splice(i, 1);
+
+        if (
+            l.x < player.x + player.w &&
+            l.x + l.size > player.x &&
+            l.y < player.y + player.h &&
+            l.y + l.size > player.y
+        ) {
+            shields++;
+            document.getElementById("lives").textContent = "Tarcza: " + shields;
+            pickSound.play();
+            loot.splice(i, 1);
+        }
+    });
+
+    enemies.forEach((e, i) => {
         bullets.forEach((b, j) => {
             if (
-                b.x < e.x + e.width &&
-                b.x + b.width > e.x &&
-                b.y < e.y + e.height &&
-                b.y + b.height > e.y
+                b.x < e.x + e.w &&
+                b.x + b.w > e.x &&
+                b.y < e.y + e.h &&
+                b.y + b.h > e.y
             ) {
-                enemies.splice(i, 1);
+                e.hp -= 30;
                 bullets.splice(j, 1);
 
-                score++;
-                document.getElementById("score").textContent = "Punkty: " + score;
+                if (e.hp <= 0) {
+                    score++;
+                    document.getElementById("score").textContent = "Punkty: " + score;
 
-                hitSound.play();
+                    addExplosion(e.x + e.w/2, e.y + e.h/2);
+                    hitSound.play();
+
+                    if (Math.random() < 0.35) {
+                        loot.push({
+                            x: e.x + e.w/2,
+                            y: e.y,
+                            size: 15
+                        });
+                    }
+
+                    enemies.splice(i, 1);
+                }
             }
         });
     });
 
+    explosions = explosions.filter(ex => ex.r < ex.maxR);
+    explosions.forEach(ex => {
+        ex.r += 2;
+        ex.alpha -= 0.04;
+    });
+
     enemySpawnTimer++;
-    if (enemySpawnTimer > 60 - difficulty * 10) {
+    if (enemySpawnTimer > 55 - difficulty * 10) {
         spawnEnemy();
         enemySpawnTimer = 0;
     }
+}
+
+function drawHPBar(x, y, w, h, hp, maxhp) {
+    ctx.fillStyle = "red";
+    ctx.fillRect(x, y - 8, w, 5);
+    ctx.fillStyle = "lime";
+    ctx.fillRect(x, y - 8, w * (hp/maxhp), 5);
 }
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     ctx.fillStyle = "lime";
-    ctx.fillRect(player.x, player.y, player.width, player.height);
+    ctx.fillRect(player.x, player.y, player.w, player.h);
 
     ctx.fillStyle = "yellow";
-    bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
+    bullets.forEach(b => ctx.fillRect(b.x, b.y, b.w, b.h));
 
-    ctx.fillStyle = "red";
     enemies.forEach(e => {
-        // mała animacja pulsowania wrogów
-        ctx.save();
-        ctx.globalAlpha = 0.8 + Math.sin(Date.now()/200) * 0.2;
-        ctx.fillRect(e.x, e.y, e.width, e.height);
-        ctx.restore();
+        ctx.fillStyle = "red";
+        ctx.fillRect(e.x, e.y, e.w, e.h);
+        drawHPBar(e.x, e.y, e.w, e.h, e.hp, e.maxhp);
+    });
+
+    ctx.fillStyle = "cyan";
+    loot.forEach(l => ctx.fillRect(l.x, l.y, l.size, l.size));
+
+    explosions.forEach(ex => {
+        ctx.beginPath();
+        ctx.arc(ex.x, ex.y, ex.r, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(255,150,0,${ex.alpha})`;
+        ctx.fill();
     });
 }
 
