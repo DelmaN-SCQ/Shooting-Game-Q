@@ -3,63 +3,29 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Strzelanka 2D — wersja z botami i sprite</title>
+<title>Strzelanka 2D — pełna wersja z QCoins i sklepem</title>
 <style>
-  :root{
-    --bg:#0b0b0f; --panel:#0f1720; --accent:#00e0a8; --danger:#ff5c5c;
-    --muted:#99a0ac; --glass: rgba(255,255,255,0.04);
-  }
+  :root{ --bg:#0b0b0f; --panel:#0f1720; --accent:#00e0a8; --danger:#ff5c5c; --muted:#99a0ac; }
   html,body{height:100%;margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);color:#e6eef6}
-  .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box}
-  /* game area card */
-  .card{
-    width:880px;
-    max-width:calc(100% - 48px);
-    background:linear-gradient(180deg,#071018 0%, #08121a 100%);
-    border-radius:14px;
-    box-shadow: 0 12px 40px rgba(2,6,23,0.7), inset 0 1px 0 rgba(255,255,255,0.02);
-    padding:18px;
-    display:flex;
-    gap:12px;
-  }
-
-  /* canvas container */
-  .game-area { position:relative; background:#000; border-radius:8px; overflow:hidden; flex:1; display:flex; align-items:center; justify-content:center; }
-  canvas{ display:block; width:760px; height:540px; background: #050607; }
-
-  /* HUD / side panel */
-  .panel { width:220px; display:flex; flex-direction:column; gap:12px; }
-  .panel .title { font-size:18px; font-weight:600; color:var(--accent); }
-  .stat { background:var(--panel); padding:10px; border-radius:10px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.02); }
-  .stat .label{ font-size:12px; color:var(--muted); }
-  .stat .value{ font-size:20px; margin-top:6px; }
-
-  /* player HP bar at bottom of canvas area */
-  .hpbar {
-    position:absolute; left:50%; transform:translateX(-50%); bottom:12px; width:56%; height:14px;
-    background:rgba(255,255,255,0.04); border-radius:9px; overflow:hidden; box-shadow:0 4px 18px rgba(0,0,0,0.6);
-  }
-  .hpfill{ height:100%; width:100%; background:linear-gradient(90deg,#40ff9d,#00b37a); transition:width 200ms linear; }
-
-  /* small helpers */
-  .controls { font-size:13px; color:var(--muted); margin-top:6px; }
-  .center{ display:flex; align-items:center; justify-content:center; }
-
-  /* menu overlay */
-  #menu {
-    position:absolute; inset:0; display:flex; align-items:center; justify-content:center; z-index:9;
-    background:linear-gradient(180deg, rgba(0,0,0,0.65), rgba(0,0,0,0.5)); backdrop-filter: blur(3px);
-    flex-direction:column; gap:10px;
-  }
-  .menu-box{ background:var(--panel); padding:18px 22px; border-radius:10px; text-align:center; min-width:320px; }
-  .menu-box h1{ margin:0 0 6px 0; color:var(--accent); }
-  .menu-row{ display:flex; gap:8px; justify-content:center; margin-top:8px; }
-  .btn{ padding:10px 14px; border-radius:8px; border:none; background:#0b1320; color:#eaf6f0; cursor:pointer; font-weight:600; }
-  .btn:hover{ filter:brightness(1.05); transform:translateY(-1px); }
-  .btn.ghost{ background:transparent; border:1px solid rgba(255,255,255,0.04) }
-
-  /* responsive */
-  @media (max-width:900px){ .card{ flex-direction:column; } .panel{ width:100%; order:2; } canvas{ width:100%; height:420px; } }
+  .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box}
+  .card{width:980px;max-width:calc(100% - 36px);background:linear-gradient(180deg,#071018 0%, #08121a 100%);border-radius:12px;box-shadow:0 12px 40px rgba(2,6,23,0.7);padding:14px;display:flex;gap:12px}
+  .game-area{position:relative;background:#000;border-radius:8px;overflow:hidden;flex:1;display:flex;align-items:center;justify-content:center}
+  canvas{display:block;background:#050607;width:760px;height:540px}
+  .panel{width:240px;display:flex;flex-direction:column;gap:10px}
+  .title{font-size:16px;font-weight:700;color:var(--accent)}
+  .stat{background:var(--panel);padding:10px;border-radius:8px}
+  .stat .label{font-size:12px;color:var(--muted)}
+  .stat .value{font-size:18px;margin-top:6px}
+  .hpbar{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;width:56%;height:14px;background:rgba(255,255,255,0.04);border-radius:9px;overflow:hidden}
+  .hpfill{height:100%;width:100%;background:linear-gradient(90deg,#40ff9d,#00b37a);transition:width 200ms linear}
+  #menu{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:9;background:linear-gradient(180deg, rgba(0,0,0,0.65), rgba(0,0,0,0.5));backdrop-filter: blur(3px);flex-direction:column;gap:10px}
+  .menu-box{background:var(--panel);padding:14px 18px;border-radius:10px;text-align:center;min-width:300px}
+  .menu-row{display:flex;gap:8px;justify-content:center;margin-top:8px}
+  .btn{padding:8px 12px;border-radius:8px;border:none;background:#0b1320;color:#eaf6f0;cursor:pointer;font-weight:600}
+  .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04)}
+  .shop-item{display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);margin-top:8px}
+  .controls{font-size:13px;color:var(--muted);margin-top:6px}
+  @media (max-width:980px){.card{flex-direction:column}.panel{width:100%}.game-area{order:1}.panel{order:2}.canvas{width:100%}}
 </style>
 </head>
 <body>
@@ -68,19 +34,17 @@
     <div class="game-area" id="gameWrap">
       <canvas id="gameCanvas" width="760" height="540"></canvas>
 
-      <!-- in-canvas HUD: HP bar -->
       <div class="hpbar" id="playerHPbar"><div class="hpfill" id="hpFill"></div></div>
 
-      <!-- menu overlay -->
       <div id="menu" class="menu-box">
         <div style="font-size:13px;color:var(--muted)">Strzelanka 2D</div>
-        <h1>Start</h1>
+        <h1 style="margin:6px 0 0 0">Start</h1>
         <div class="menu-row">
           <button class="btn" onclick="startGame(1)">Łatwy</button>
           <button class="btn" onclick="startGame(2)">Średni</button>
           <button class="btn" onclick="startGame(3)">Trudny</button>
         </div>
-        <div style="margin-top:10px;color:var(--muted);font-size:13px">Ruch: WASD, Strzał: Spacja (lub klik)</div>
+        <div style="margin-top:10px;color:var(--muted);font-size:13px">Ruch: WASD lub strzałki, Strzał: Spacja lub klik</div>
       </div>
     </div>
 
@@ -90,6 +54,11 @@
       <div class="stat">
         <div class="label">Punkty</div>
         <div class="value" id="score">0</div>
+      </div>
+
+      <div class="stat">
+        <div class="label">QCoins</div>
+        <div class="value" id="qcoins">0</div>
       </div>
 
       <div class="stat">
@@ -105,33 +74,31 @@
       <div class="stat">
         <div class="label">Życie (HP)</div>
         <div class="value" id="hpSmall">100</div>
-        <div class="controls">Gdy tarcza >0, pociski absorbowane.</div>
+        <div class="controls">Gdy tarcza &gt;0, pociski absorbowane.</div>
       </div>
 
-      <div class="stat center">
-        <div style="font-size:12px;color:var(--muted);text-align:center">Porady</div>
+      <div class="title" style="margin-top:6px">Sklep pocisków</div>
+      <div class="stat" id="shop">
+        <div style="font-size:13px;color:var(--muted)">Wybierz kolor pocisku (kosmetyczne). Każdy kosztuje QCoins pierwszym zakupie.</div>
+        <div id="shopItems"></div>
       </div>
 
-      <div style="flex:1"></div>
-
-      <div class="stat center">
-        <div style="font-size:12px;color:var(--muted);text-align:center">Kliknij w okno gry i użyj Spacji, żeby strzelać</div>
+      <div class="stat">
+        <div class="label">Sterowanie</div>
+        <div class="controls">W/A/S/D lub ←↑↓→ — ruch. Spacja lub klik — strzał.</div>
       </div>
+
     </div>
   </div>
 </div>
 
 <script>
-/* -------------------------------------------------------
-   Gra: boty strzelają, WASD + spacja, PNG sprite (w pamięci),
-   lepszy UI, tarcze drop i działania jak prośba użytkownika
-   ------------------------------------------------------- */
+/* Full game with: improved spawn control, WASD+arrows, space key, enemy shooting,
+   QCoins currency, shop (cosmetic bullet colors), better bullets, localStorage for purchases */
 
-/* -- canvas setup -- */
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-/* -- game state -- */
 let running = false;
 let difficulty = 1;
 let score = 0;
@@ -139,409 +106,186 @@ let wave = 0;
 let shieldCount = 0;
 let playerMaxHP = 100;
 let playerHP = playerMaxHP;
+let qcoins = 0;
 
-const keys = { w:false,a:false,s:false,d:false, space:false };
+const keys = { w:false,a:false,s:false,d:false, up:false,down:false,left:false,right:false, space:false };
 
 let player, bullets=[], enemyBullets=[], enemies=[], drops=[], explosions=[];
 let spawnTimer=0;
 
-/* -- sprites generated as PNG data URLs (so są "PNG" w pamięci) -- */
-const sprites = {};
-function makeSprite(width,height, drawFn){
-  // create offscreen canvas
-  const s = document.createElement('canvas');
-  s.width = width; s.height = height;
-  const c = s.getContext('2d');
-  drawFn(c, width, height);
-  // return an Image with PNG data URL
-  const img = new Image();
-  img.src = s.toDataURL('image/png');
-  return img;
-}
+/* shop data: colors and costs */
+const shopData = [
+  { id:'yellow', label:'Żółty', color:'#ffe18b', cost:0 },
+  { id:'pink', label:'Różowy', color:'#ff9bd1', cost:25 },
+  { id:'cyan', label:'Błękitny', color:'#9ef0ff', cost:50 },
+  { id:'purple', label:'Fiolet', color:'#cda1ff', cost:90 },
+  { id:'gold', label:'Złoty', color:'#ffdc7a', cost:150 }
+];
 
-/* create player sprite: teal ship */
-sprites.player = makeSprite(48,28, (c,w,h)=>{
-  c.clearRect(0,0,w,h);
-  // body
-  c.fillStyle = '#00e0a8';
-  c.beginPath();
-  c.moveTo(4,h-4);
-  c.lineTo(w/2,4);
-  c.lineTo(w-4,h-4);
-  c.closePath();
-  c.fill();
-  // cockpit
-  c.fillStyle = '#072a22';
-  c.fillRect(w/2-6,6,12,8);
-  // glow
-  c.globalAlpha=0.18;
-  c.fillStyle='#00e0a8';
-  c.fillRect(0,h-6,w,6);
-  c.globalAlpha=1;
-});
-
-/* enemy sprite: red rectangle with detail */
-sprites.enemy = makeSprite(40,24, (c,w,h)=>{
-  c.clearRect(0,0,w,h);
-  c.fillStyle = '#ff5c5c';
-  c.fillRect(2,4,w-4,h-8);
-  c.fillStyle = '#7a0b0b';
-  c.fillRect(6,8,w-12,6);
-});
-
-/* shield sprite: small cyan circle */
-sprites.shield = makeSprite(20,20,(c,w,h)=>{
-  c.clearRect(0,0,w,h);
-  const g = c.createRadialGradient(w/2,h/2,1,w/2,h/2,w/2);
-  g.addColorStop(0,'#bff9e6'); g.addColorStop(1,'#00b37a');
-  c.fillStyle = g;
-  c.beginPath(); c.arc(w/2,h/2,w/2-1,0,Math.PI*2); c.fill();
-  c.fillStyle='rgba(255,255,255,0.25)';
-  c.beginPath(); c.arc(w/2-3,h/2-4,3,0,Math.PI*2); c.fill();
-});
-
-/* sounds (external quick effects) */
-const sounds = {
-  shoot: new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg'),
-  hit: new Audio('https://actions.google.com/sounds/v1/cartoon/pop.ogg'),
-  boom: new Audio('https://actions.google.com/sounds/v1/explosions/explosion.ogg'),
-  pickup: new Audio('https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg')
+/* load persistent data */
+const storage = {
+  get(key, def){ try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : def } catch(e){ return def } },
+  set(key,val){ try{ localStorage.setItem(key, JSON.stringify(val)); } catch(e){} }
 };
-for(let k in sounds) sounds[k].volume = 0.08;
 
-/* -- input handlers -- */
+let owned = storage.get('ownedBullets', { yellow:true });
+let selectedBullet = storage.get('selectedBullet', 'yellow');
+qcoins = storage.get('qcoins', 0);
+
+/* sprites made in-memory */
+function makeSprite(w,h,draw){ const s=document.createElement('canvas'); s.width=w; s.height=h; const c=s.getContext('2d'); draw(c,w,h); const img=new Image(); img.src=s.toDataURL('image/png'); return img; }
+const sprites = {};
+sprites.player = makeSprite(48,28,(c,w,h)=>{
+  c.fillStyle='#00e0a8'; c.beginPath(); c.moveTo(4,h-4); c.lineTo(w/2,4); c.lineTo(w-4,h-4); c.closePath(); c.fill();
+  c.fillStyle='#072a22'; c.fillRect(w/2-6,6,12,8);
+});
+sprites.enemy = makeSprite(40,24,(c,w,h)=>{ c.fillStyle='#ff5c5c'; c.fillRect(2,4,w-4,h-8); c.fillStyle='#7a0b0b'; c.fillRect(6,8,w-12,6); });
+sprites.shield = makeSprite(20,20,(c,w,h)=>{ const g=c.createRadialGradient(w/2,h/2,1,w/2,h/2,w/2); g.addColorStop(0,'#bff9e6'); g.addColorStop(1,'#00b37a'); c.fillStyle=g; c.beginPath(); c.arc(w/2,w/2,w/2-1,0,Math.PI*2); c.fill(); });
+
+/* sounds */
+const sounds = { shoot:new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg'), hit:new Audio('https://actions.google.com/sounds/v1/cartoon/pop.ogg'), boom:new Audio('https://actions.google.com/sounds/v1/explosions/explosion.ogg'), pickup:new Audio('https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg') };
+for(let k in sounds) sounds[k].volume=0.08;
+
+/* input handlers (WASD + arrows + space) */
 window.addEventListener('keydown', e=>{
-  if(e.code === 'KeyW') keys.w = true;
-  if(e.code === 'KeyA') keys.a = true;
-  if(e.code === 'KeyS') keys.s = true;
-  if(e.code === 'KeyD') keys.d = true;
-  if(e.code === 'Space'){ keys.space = true; e.preventDefault(); }
+  if(e.code==='KeyW') keys.w=true; if(e.code==='KeyA') keys.a=true; if(e.code==='KeyS') keys.s=true; if(e.code==='KeyD') keys.d=true;
+  if(e.code==='ArrowUp') keys.up=true; if(e.code==='ArrowLeft') keys.left=true; if(e.code==='ArrowDown') keys.down=true; if(e.code==='ArrowRight') keys.right=true;
+  if(e.code==='Space'){ keys.space=true; e.preventDefault(); }
 });
 window.addEventListener('keyup', e=>{
-  if(e.code === 'KeyW') keys.w = false;
-  if(e.code === 'KeyA') keys.a = false;
-  if(e.code === 'KeyS') keys.s = false;
-  if(e.code === 'KeyD') keys.d = false;
-  if(e.code === 'Space') keys.space = false;
+  if(e.code==='KeyW') keys.w=false; if(e.code==='KeyA') keys.a=false; if(e.code==='KeyS') keys.s=false; if(e.code==='KeyD') keys.d=false;
+  if(e.code==='ArrowUp') keys.up=false; if(e.code==='ArrowLeft') keys.left=false; if(e.code==='ArrowDown') keys.down=false; if(e.code==='ArrowRight') keys.right=false;
+  if(e.code==='Space') keys.space=false;
 });
-/* also allow mouse click to shoot */
 canvas.addEventListener('click', ()=> keys.space = true );
 
-/* -- helpers -- */
-function rand(min,max){ return Math.random()*(max-min)+min; }
-function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+/* helpers */
+function rand(min,max){ return Math.random()*(max-min)+min }
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)) }
+function rectColl(a,b){ return a.x < b.x + (b.w||0) && a.x + (a.w||0) > b.x && a.y < b.y + (b.h||0) && (a.y + (a.h||0)) > b.y }
 
-/* -- player setup -- */
-function spawnPlayer(){
-  player = {
-    x: canvas.width/2 - 24,
-    y: canvas.height - 80,
-    w: 48, h: 28,
-    speed: 4.2,
-    fireRate: 14, fireCooldown:0,
-    shields: 0
-  };
-  playerHP = playerMaxHP;
-  updateUI();
-}
+/* player */
+function spawnPlayer(){ player = { x: canvas.width/2 - 24, y: canvas.height - 90, w:48, h:28, speed:4.2, fireRate:12, fireCooldown:0, shields:0 }; playerHP = playerMaxHP; updateUI(); }
 
-/* -- enemy spawn and behavior -- */
-function spawnWave(n){
-  wave++;
-  document.getElementById('wave').textContent = wave;
-  for(let i=0;i<n;i++){
-    enemies.push({
-      x: rand(20, canvas.width - 60),
-      y: rand(-220, -40) - i*30,
-      w:40, h:24,
-      speed: 0.6 + difficulty*0.4 + rand(0,0.8),
-      hp: 20 + difficulty*10,
-      maxhp: 20 + difficulty*10,
-      fireCooldown: Math.floor(rand(80, 220)),
-      aim: Math.random() < 0.5 // if true will aim at player
-    });
-  }
-}
+/* spawn control: cap active enemies to avoid 100+ */
+const MAX_ENEMIES = 12;
+function spawnWave(n){ wave++; document.getElementById('wave').textContent = wave; const toSpawn = Math.min(n, MAX_ENEMIES); for(let i=0;i<toSpawn;i++){ enemies.push({ x: rand(20, canvas.width - 60), y: rand(-260, -40) - i*40, w:40, h:24, speed: 0.6 + difficulty*0.4 + rand(0,0.8), hp: 20 + difficulty*10, maxhp: 20 + difficulty*10, fireCooldown: Math.floor(rand(80, 200)), aim: Math.random()<0.6 }); } }
 
-/* -- shooting functions -- */
-function playerShoot(){
-  if(player.fireCooldown > 0) return;
-  bullets.push({
-    x: player.x + player.w/2 - 4,
-    y: player.y - 8,
-    w:6, h:12, speed: 9, from:'player'
-  });
-  player.fireCooldown = player.fireRate;
-  sounds.shoot.currentTime = 0; sounds.shoot.play();
-}
+/* shooting */
+function playerShoot(){ if(player.fireCooldown>0) return; const color = shopData.find(s=>s.id===selectedBullet).color || '#ffe18b'; bullets.push({ x: player.x + player.w/2 - 6, y: player.y - 10, w:8, h:14, speed:10, color }); player.fireCooldown = player.fireRate; sounds.shoot.currentTime=0; sounds.shoot.play(); }
+function enemyShoot(e){ const bx = e.x + e.w/2; const by = e.y + e.h + 4; let vx=0, vy = 3 + difficulty*0.6; if(e.aim){ const dx = (player.x + player.w/2) - bx; const dy = (player.y + player.h/2) - by; const mag = Math.sqrt(dx*dx + dy*dy) || 1; const speed = 3.2 + difficulty*0.6; vx = dx/mag * speed * (0.85 + Math.random()*0.5); vy = dy/mag * speed * (0.85 + Math.random()*0.35); } enemyBullets.push({ x: bx-6, y: by, w:10, h:12, vx, vy, from:'enemy' }); }
 
-function enemyShoot(e){
-  // shoot either straight down or aimed (velocity vector)
-  const bx = e.x + e.w/2;
-  const by = e.y + e.h + 4;
-  let vx = 0, vy = 4 + difficulty*0.6;
-  if(e.aim){
-    // aim roughly at player (with some inaccuracy)
-    const dx = (player.x + player.w/2) - bx;
-    const dy = (player.y + player.h/2) - by;
-    const mag = Math.sqrt(dx*dx + dy*dy) || 1;
-    const speed = 3.5 + difficulty*0.6;
-    vx = dx/mag * speed * (0.8 + Math.random()*0.6);
-    vy = dy/mag * speed * (0.8 + Math.random()*0.4);
-  }
-  enemyBullets.push({ x: bx-5, y: by, w:8, h:12, vx, vy, from:'enemy' });
-}
+/* drops */
+function spawnDrop(x,y){ drops.push({ x: x - 9, y: y, size:18, vy:1.6 + Math.random()*1.2 }); }
 
-/* -- drops (shields) -- */
-function spawnDrop(x,y){
-  drops.push({ x: x - 8, y: y, size:18, vy:1.6 + Math.random()*1.2 });
-}
+/* explosions */
+function spawnExplosion(x,y,size=28){ explosions.push({ x,y, r:6, maxR:size, alpha:1 }); sounds.boom.currentTime=0; sounds.boom.play(); }
 
-/* -- explosions -- */
-function spawnExplosion(x,y,size=28){
-  explosions.push({ x,y, r:6, maxR:size, alpha:1 });
-  sounds.boom.currentTime = 0; sounds.boom.play();
-}
+/* update UI */
+function updateUI(){ document.getElementById('score').textContent = score; document.getElementById('shieldCount').textContent = shieldCount; document.getElementById('wave').textContent = wave; document.getElementById('hpSmall').textContent = Math.max(0,Math.floor(playerHP)); document.getElementById('qcoins').textContent = qcoins; const hpPct = clamp(playerHP / playerMaxHP * 100, 0, 100); const hpFill = document.getElementById('hpFill'); hpFill.style.width = hpPct + '%'; if(hpPct>60) hpFill.style.background='linear-gradient(90deg,#40ff9d,#00b37a)'; else if(hpPct>30) hpFill.style.background='linear-gradient(90deg,#ffd86b,#ff8a4b)'; else hpFill.style.background='linear-gradient(90deg,#ff8a4b,#ff5c5c)'; }
 
-/* -- collisions -- */
-function rectColl(a,b){
-  return a.x < b.x + b.w && a.x + (a.w||0) > b.x && a.y < b.y + b.h && (a.y + (a.h||0)) > b.y;
-}
-
-/* -- UI update -- */
-function updateUI(){
-  document.getElementById('score').textContent = score;
-  document.getElementById('shieldCount').textContent = shieldCount;
-  document.getElementById('hpSmall').textContent = Math.max(0,Math.floor(playerHP));
-  const hpPct = clamp(playerHP / playerMaxHP * 100, 0, 100);
-  document.getElementById('hpFill').style.width = hpPct + '%';
-  // color changes via style
-  const fill = document.getElementById('hpFill');
-  if(hpPct > 60) fill.style.background = 'linear-gradient(90deg,#40ff9d,#00b37a)';
-  else if(hpPct > 30) fill.style.background = 'linear-gradient(90deg,#ffd86b,#ff8a4b)';
-  else fill.style.background = 'linear-gradient(90deg,#ff8a4b,#ff5c5c)';
-}
-
-/* -- game start -- */
-function startGame(diff){
-  difficulty = diff;
-  score = 0; wave = 0; shieldCount = 0;
-  bullets = []; enemyBullets = []; enemies = []; drops = []; explosions = [];
-  spawnPlayer();
-  // initial waves
-  spawnWave(4 + diff*2);
-  document.getElementById('menu').style.display = 'none';
-  running = true;
-  loop();
-}
-
-/* -- update loop -- */
-function update(){
-  // player movement (WASD)
-  if(keys.w) player.y -= player.speed;
-  if(keys.s) player.y += player.speed;
-  if(keys.a) player.x -= player.speed;
-  if(keys.d) player.x += player.speed;
-  // clamp inside canvas
-  player.x = clamp(player.x, 8, canvas.width - player.w - 8);
-  player.y = clamp(player.y, 8, canvas.height - player.h - 60);
-
+/* main update */
+function update(){ // movement
+  if(keys.w || keys.up) player.y -= player.speed; if(keys.s || keys.down) player.y += player.speed; if(keys.a || keys.left) player.x -= player.speed; if(keys.d || keys.right) player.x += player.speed;
+  player.x = clamp(player.x, 8, canvas.width - player.w - 8); player.y = clamp(player.y, 8, canvas.height - player.h - 60);
   // shooting
-  if(keys.space) playerShoot();
-  if(player.fireCooldown > 0) player.fireCooldown--;
+  if(keys.space) playerShoot(); if(player.fireCooldown>0) player.fireCooldown--;
 
-  // bullets update
-  bullets.forEach((b,i)=>{
-    b.y -= b.speed;
-    if(b.y < -40) bullets.splice(i,1);
-  });
+  bullets.forEach((b,i)=>{ b.y -= b.speed; if(b.y < -40) bullets.splice(i,1); });
 
-  // enemy bullets
-  enemyBullets.forEach((b,i)=>{
-    b.x += b.vx || 0;
-    b.y += b.vy || b.speed || 3;
-    // out of screen
-    if(b.y > canvas.height + 40 || b.x < -60 || b.x > canvas.width + 60) enemyBullets.splice(i,1);
-    else {
-      // hit player?
-      const pb = { x: b.x, y: b.y, w: b.w, h: b.h };
-      const pl = { x: player.x, y: player.y, w: player.w, h: player.h };
-      if(rectColl(pb,pl)){
-        enemyBullets.splice(i,1);
-        if(shieldCount > 0){
-          // shield absorbs
-          shieldCount = Math.max(0, shieldCount - 1);
-          document.getElementById('shieldCount').textContent = shieldCount;
-          sounds.pickup.currentTime = 0; sounds.pickup.play();
-        } else {
-          playerHP -= 12 + difficulty*2;
-          spawnExplosion(player.x + player.w/2, player.y + player.h/2, 32);
-          sounds.hit.currentTime = 0; sounds.hit.play();
-          if(playerHP <= 0){
-            running = false;
-            // show menu again with score
-            setTimeout(()=> {
-              alert('Koniec gry! Twój wynik: ' + score);
-              location.reload();
-            }, 80);
-          }
-        }
-        updateUI();
-      }
-    }
-  });
+  enemyBullets.forEach((b,i)=>{ b.x += b.vx || 0; b.y += b.vy || b.speed || 3; if(b.y>canvas.height+40 || b.x<-80 || b.x>canvas.width+80) enemyBullets.splice(i,1); else { if(rectColl(b, player)){ enemyBullets.splice(i,1); if(shieldCount>0){ shieldCount = Math.max(0, shieldCount-1); document.getElementById('shieldCount').textContent = shieldCount; sounds.pickup.currentTime=0; sounds.pickup.play(); } else { playerHP -= 12 + difficulty*2; spawnExplosion(player.x + player.w/2, player.y + player.h/2, 32); sounds.hit.currentTime=0; sounds.hit.play(); if(playerHP <= 0){ running=false; storage.set('qcoins', qcoins); setTimeout(()=>{ showGameOver(); }, 120); } } updateUI(); } } });
 
-  // enemies update
   enemies.forEach((e, ei)=>{
     e.y += e.speed;
-    // enemy shooting
-    if(e.fireCooldown > 0) e.fireCooldown--;
-    else {
-      enemyShoot(e);
-      e.fireCooldown = Math.floor(rand(90 - difficulty*12, 220 - difficulty*20));
-      if(e.fireCooldown < 40) e.fireCooldown = 40;
-    }
-
-    // if enemy passes bottom of screen: remove (no penalty)
-    if(e.y > canvas.height + 50){ enemies.splice(ei,1); }
+    if(e.fireCooldown>0) e.fireCooldown--; else { enemyShoot(e); e.fireCooldown = Math.floor(rand(90 - difficulty*12, 220 - difficulty*20)); if(e.fireCooldown<40) e.fireCooldown = 40; }
+    if(e.y > canvas.height + 50) { enemies.splice(ei,1); }
   });
 
-  // bullets hitting enemies
   bullets.forEach((b, bi)=>{
     enemies.forEach((e, ei)=>{
       if(rectColl(b,e)){
-        // bullet deals damage
-        e.hp -= 28;
-        bullets.splice(bi,1);
-        if(e.hp <= 0){
-          // score, explosion, chance to drop shield
-          score += 1;
-          spawnExplosion(e.x + e.w/2, e.y + e.h/2, 40);
-          if(Math.random() < 0.38) spawnDrop(e.x + e.w/2, e.y + e.h/2);
-          enemies.splice(ei,1);
-          sounds.hit.currentTime = 0; sounds.hit.play();
-          updateUI();
-        }
+        e.hp -= 28; bullets.splice(bi,1);
+        if(e.hp <= 0){ score++; qcoins += Math.floor(5 + difficulty*2 + Math.random()*6); spawnExplosion(e.x + e.w/2, e.y + e.h/2, 40); if(Math.random() < 0.35) spawnDrop(e.x + e.w/2, e.y + e.h/2); enemies.splice(ei,1); sounds.hit.currentTime=0; sounds.hit.play(); updateUI(); storage.set('qcoins', qcoins); }
       }
     });
   });
 
-  // drops update (they fall slowly and drift)
-  drops.forEach((d, di)=>{
-    d.y += d.vy;
-    d.x += Math.sin((d.y + di)*0.02) * 0.6;
-    // collect?
-    if(rectColl(d, { x: player.x, y: player.y, w:player.w, h:player.h })){
-      shieldCount++; drops.splice(di,1);
-      document.getElementById('shieldCount').textContent = shieldCount;
-      sounds.pickup.currentTime = 0; sounds.pickup.play();
-    }
-    // out
-    if(d.y > canvas.height + 30) drops.splice(di,1);
-  });
+  drops.forEach((d,di)=>{ d.y += d.vy; d.x += Math.sin((d.y+di)*0.02)*0.6; if(rectColl(d, player)){ shieldCount++; drops.splice(di,1); document.getElementById('shieldCount').textContent = shieldCount; sounds.pickup.currentTime=0; sounds.pickup.play(); } if(d.y>canvas.height+30) drops.splice(di,1); });
 
-  // explosions expansion
-  explosions.forEach((ex, ix)=>{
-    ex.r += 2.6;
-    ex.alpha -= 0.04;
-    if(ex.alpha <= 0) explosions.splice(ix,1);
-  });
+  explosions.forEach((ex,ix)=>{ ex.r += 2.6; ex.alpha -= 0.04; if(ex.alpha<=0) explosions.splice(ix,1); });
 
-  // spawn new wave if no enemies
-  if(enemies.length === 0){
-    setTimeout(()=> {
-      if(!running) return;
-      spawnWave(3 + difficulty*2 + Math.floor(wave*0.6));
-    }, 250);
+  // spawn wave control: keep enemy count limited and progressive waves
+  if(enemies.length === 0){ // spawn next wave after short delay
+    setTimeout(()=>{ if(!running) return; spawnWave(3 + difficulty*2 + Math.floor(wave*0.6)); }, 300);
   }
 
-  // update UI
   updateUI();
 }
 
-/* -- draw function -- */
-function draw(){
-  // clear
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  // stars background
-  ctx.fillStyle = '#020305';
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-  // subtle stars
-  for(let i=0;i<70;i++){
-    const x = (i*97) % canvas.width;
-    const y = (i*53 + (Date.now()/40 % canvas.height)) % canvas.height;
-    ctx.fillStyle = (i%7===0) ? '#3a5' : '#213';
-    ctx.fillRect(x, y, 1, 1);
-  }
-
-  // draw player sprite (use PNG image)
+/* draw */
+function draw(){ ctx.clearRect(0,0,canvas.width,canvas.height); // background
+  ctx.fillStyle='#020305'; ctx.fillRect(0,0,canvas.width,canvas.height);
+  // stars
+  for(let i=0;i<70;i++){ const x=(i*97)%canvas.width; const y=(i*53 + (Date.now()/40 % canvas.height))%canvas.height; ctx.fillStyle=(i%7===0)?'#3a5':'#213'; ctx.fillRect(x,y,1,1); }
+  // player
   ctx.drawImage(sprites.player, player.x, player.y, player.w, player.h);
-
-  // player muzzle flash when shooting
-  if(player.fireCooldown > player.fireRate - 4){
-    ctx.fillStyle = 'rgba(255,240,160,0.7)';
-    ctx.fillRect(player.x + player.w/2 - 3, player.y - 10, 6, 8);
-  }
-
-  // draw bullets
-  bullets.forEach(b=>{
-    ctx.fillStyle = '#ffe18b';
-    ctx.fillRect(b.x, b.y, b.w, b.h);
-  });
-
+  // muzzle
+  if(player.fireCooldown > player.fireRate - 4){ ctx.fillStyle='rgba(255,240,160,0.7)'; ctx.fillRect(player.x + player.w/2 - 3, player.y - 10, 6, 8); }
+  // bullets
+  bullets.forEach(b=>{ ctx.fillStyle = b.color || '#ffe18b'; // improved bullet style: glow
+    ctx.fillRect(b.x, b.y, b.w, b.h); ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(b.x+1, b.y+1, b.w-2, b.h-2); });
   // enemies
-  enemies.forEach(e=>{
-    // draw enemy sprite
-    ctx.drawImage(sprites.enemy, e.x, e.y, e.w, e.h);
-    // hp bar above enemy
-    const barW = e.w;
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(e.x, e.y - 8, barW, 6);
-    ctx.fillStyle = '#ff5c5c';
-    ctx.fillRect(e.x, e.y - 8, barW * (e.hp / e.maxhp), 6);
-  });
-
+  enemies.forEach(e=>{ ctx.drawImage(sprites.enemy, e.x, e.y, e.w, e.h); // hp bar
+    const barW = e.w; ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(e.x, e.y - 8, barW, 6); ctx.fillStyle='#ff5c5c'; ctx.fillRect(e.x, e.y - 8, barW * (e.hp / e.maxhp), 6); });
   // enemy bullets
-  enemyBullets.forEach(b=>{
-    ctx.fillStyle = '#ff9b9b';
-    ctx.fillRect(b.x, b.y, b.w, b.h);
-  });
-
-  // drops (shield icons) - draw sprite
-  drops.forEach(d => {
-    ctx.drawImage(sprites.shield, d.x, d.y, d.size, d.size);
-  });
-
+  enemyBullets.forEach(b=>{ ctx.fillStyle='#ff9b9b'; ctx.fillRect(b.x, b.y, b.w, b.h); });
+  // drops
+  drops.forEach(d=>{ ctx.drawImage(sprites.shield, d.x, d.y, d.size, d.size); });
   // explosions
-  explosions.forEach(ex=>{
-    const g = ctx.createRadialGradient(ex.x,ex.y,0, ex.x,ex.y,ex.r);
-    g.addColorStop(0, `rgba(255,220,120,${ex.alpha})`);
-    g.addColorStop(0.6, `rgba(255,120,40,${ex.alpha*0.9})`);
-    g.addColorStop(1, `rgba(0,0,0,0)`);
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(ex.x, ex.y, ex.r, 0, Math.PI*2); ctx.fill();
+  explosions.forEach(ex=>{ const g = ctx.createRadialGradient(ex.x,ex.y,0,ex.x,ex.y,ex.r); g.addColorStop(0, `rgba(255,220,120,${ex.alpha})`); g.addColorStop(0.6, `rgba(255,120,40,${ex.alpha*0.9})`); g.addColorStop(1, `rgba(0,0,0,0)`); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(ex.x,ex.y,ex.r,0,Math.PI*2); ctx.fill(); }); }
+
+/* main loop */
+function loop(){ if(!running) return; update(); draw(); requestAnimationFrame(loop); }
+
+/* start game */
+function startGame(diff){ difficulty = diff; score = 0; wave = 0; shieldCount = 0; bullets = []; enemyBullets = []; enemies = []; drops = []; explosions = []; qcoins = storage.get('qcoins', qcoins); spawnPlayer(); spawnWave(4 + diff*2); document.getElementById('menu').style.display = 'none'; running = true; renderShop(); loop(); }
+
+/* game over screen */
+function showGameOver(){ storage.set('qcoins', qcoins); // save
+  const menu = document.getElementById('menu'); menu.innerHTML = `<div class=\"menu-box\"><h1>Koniec gry</h1><div style=\"margin-top:6px;color:var(--muted)\">Twój wynik: ${score}</div><div class=\"menu-row\" style=\"margin-top:12px\"><button class=\"btn\" onclick=\"location.reload()\">Zagraj ponownie</button><button class=\"btn ghost\" onclick=\"location.href=location.href\">Wyjdź</button></div></div>`; menu.style.display = 'flex'; }
+
+/* shop UI */
+function renderShop(){ const shop = document.getElementById('shopItems'); shop.innerHTML = '';
+  shopData.forEach(item=>{
+    const ownedFlag = !!owned[item.id];
+    const div = document.createElement('div'); div.className='shop-item';
+    const left = document.createElement('div'); left.innerHTML = `<div style=\"font-weight:600\">${item.label}</div><div style=\"font-size:12px;color:var(--muted)\">Koszt: ${item.cost} Q</div>`;
+    const right = document.createElement('div');
+    const btn = document.createElement('button'); btn.className='btn'; btn.style.padding='6px 8px';
+    btn.textContent = ownedFlag ? (selectedBullet===item.id ? 'Wybrany' : 'Wybierz') : `Kup (${item.cost})`;
+    btn.onclick = ()=>{
+      if(ownedFlag){ selectedBullet = item.id; storage.set('selectedBullet', selectedBullet); renderShop(); } else {
+        if(qcoins >= item.cost){ qcoins -= item.cost; owned[item.id] = true; selectedBullet = item.id; storage.set('ownedBullets', owned); storage.set('qcoins', qcoins); storage.set('selectedBullet', selectedBullet); renderShop(); updateUI(); } else { alert('Brak QCoins'); }
+      }
+    };
+    // color preview
+    const preview = document.createElement('div'); preview.style.width='28px'; preview.style.height='16px'; preview.style.borderRadius='4px'; preview.style.background=item.color; preview.style.marginRight='8px'; preview.style.boxShadow='inset 0 0 6px rgba(255,255,255,0.06)';
+    right.appendChild(preview); right.appendChild(btn);
+    div.appendChild(left); div.appendChild(right);
+    shop.appendChild(div);
   });
 }
 
-/* -- main loop -- */
-function loop(){
-  if(!running) return;
-  update();
-  draw();
-  requestAnimationFrame(loop);
-}
+/* save owned/selected/qcoins periodically */
+setInterval(()=>{ storage.set('ownedBullets', owned); storage.set('selectedBullet', selectedBullet); storage.set('qcoins', qcoins); }, 2000);
 
-/* expose for debugging if needed */
-window.startGame = startGame;
+/* ensure shop renders with persisted data */
+renderShop(); updateUI();
 
 /* focus canvas to receive keyboard input */
-canvas.tabIndex = 1000;
-canvas.style.outline = 'none';
-canvas.addEventListener('mouseenter', ()=> canvas.focus());
+canvas.tabIndex = 1000; canvas.style.outline='none'; canvas.addEventListener('mouseenter', ()=> canvas.focus());
 
-/* small auto-start hint: focus */
-document.getElementById('menu').style.display = 'flex';
+window.startGame = startGame;
 </script>
 </body>
 </html>
