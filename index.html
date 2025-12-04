@@ -18,7 +18,7 @@ canvas{display:block;background:#050607;width:760px;height:540px;}
 .stat .value{font-size:18px;margin-top:6px;}
 .hpbar{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;width:56%;height:14px;background:rgba(255,255,255,0.04);border-radius:9px;overflow:hidden;}
 .hpfill{height:100%;width:100%;background:linear-gradient(90deg,#40ff9d,#00b37a);transition:width 200ms linear;}
-#menu{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:9;background:linear-gradient(180deg, rgba(0,0,0,0.65), rgba(0,0,0,0.5));backdrop-filter:blur(3px);flex-direction:column;gap:10px;}
+#menu, #shopMenu{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:9;background:linear-gradient(180deg, rgba(0,0,0,0.65), rgba(0,0,0,0.5));backdrop-filter:blur(3px);flex-direction:column;gap:10px;}
 .menu-box{background:var(--panel);padding:14px 18px;border-radius:10px;text-align:center;min-width:300px;}
 .menu-row{display:flex;gap:8px;justify-content:center;margin-top:8px;}
 .btn{padding:8px 12px;border-radius:8px;border:none;background:#0b1320;color:#eaf6f0;cursor:pointer;font-weight:600;}
@@ -34,6 +34,7 @@ canvas{display:block;background:#050607;width:760px;height:540px;}
 <div class="game-area" id="gameWrap">
 <canvas id="gameCanvas" width="760" height="540"></canvas>
 <div class="hpbar" id="playerHPbar"><div class="hpfill" id="hpFill"></div></div>
+
 <div id="menu" class="menu-box">
 <div style="font-size:13px;color:var(--muted)">Strzelanka 2D</div>
 <h1 style="margin:6px 0 0 0">Start</h1>
@@ -43,6 +44,15 @@ canvas{display:block;background:#050607;width:760px;height:540px;}
 </div>
 <div style="margin-top:10px;color:var(--muted);font-size:13px">Ruch: WASD lub strzałki, Strzał: Spacja lub klik</div>
 </div>
+
+<div id="shopMenu" class="menu-box" style="display:none;">
+<h1>Sklep</h1>
+<div id="shopItems"></div>
+<div class="menu-row" style="margin-top:12px;">
+<button class="btn" onclick="backToMenu()">Powrót</button>
+</div>
+</div>
+
 </div>
 <div class="panel">
 <div class="title">Status</div>
@@ -54,7 +64,7 @@ canvas{display:block;background:#050607;width:760px;height:540px;}
 <div class="title" style="margin-top:6px">Sklep pocisków</div>
 <div class="stat" id="shop">
 <div style="font-size:13px;color:var(--muted)">Wybierz kolor pocisku (kosmetyczne). Każdy kosztuje QCoins przy pierwszym zakupie.</div>
-<div id="shopItems"></div>
+<div id="shopItemsPanel"></div>
 </div>
 <div class="stat"><div class="label">Sterowanie</div><div class="controls">W/A/S/D lub ←↑↓→ — ruch. Spacja lub klik — strzał.</div></div>
 </div>
@@ -78,12 +88,12 @@ window.addEventListener('keydown',e=>{if(e.code==='KeyW')keys.w=true;if(e.code==
 window.addEventListener('keyup',e=>{if(e.code==='KeyW')keys.w=false;if(e.code==='KeyA')keys.a=false;if(e.code==='KeyS')keys.s=false;if(e.code==='KeyD')keys.d=false;if(e.code==='ArrowUp')keys.up=false;if(e.code==='ArrowLeft')keys.left=false;if(e.code==='ArrowDown')keys.down=false;if(e.code==='ArrowRight')keys.right=false;if(e.code==='Space')keys.space=false;});
 canvas.addEventListener('click',()=>keys.space=true);
 
-function showShop(){document.getElementById('menu').style.display='none';document.getElementById('shop').style.display='block';renderShop();}
+function showShop(){document.getElementById('menu').style.display='none';document.getElementById('shopMenu').style.display='flex';renderShop();}
+function backToMenu(){document.getElementById('shopMenu').style.display='none';document.getElementById('menu').style.display='flex';}
 
-// Tutaj wstaw pełne funkcje gry (spawnWave, playerShoot, enemyShoot, update, draw, loop, startGame, showGameOver, renderShop)
+window.startGame=function(){document.getElementById('menu').style.display='none';running=true;/* tutaj pełna inicjalizacja gry i pętla */};
 
-window.startGame=function(){document.getElementById('menu').style.display='none';running=true;/* dodaj inicjalizację gry */};
-window.showShop=showShop;
+// Tutaj wstaw pełne funkcje gry (spawnWave, playerShoot, enemyShoot, update, draw, loop, showGameOver, renderShop)
 </script>
 </body>
 </html>
