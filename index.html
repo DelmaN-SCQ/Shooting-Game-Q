@@ -3,14 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Strzelanka z Animacjami i Dźwiękiem</title>
+<title>Strzelanka z Lepszym UI</title>
 <style>
     body {
         margin: 0;
         background: #111;
         overflow: hidden;
         font-family: Arial, sans-serif;
-        color: white;
     }
     canvas {
         display: block;
@@ -22,13 +21,37 @@
         top: 10px;
         left: 50%;
         transform: translateX(-50%);
-        font-size: 20px;
+        width: 300px;
         text-align: center;
+        color: white;
+    }
+    #score {
+        font-size: 24px;
+        font-weight: bold;
+    }
+    #health-bar-container {
+        width: 100%;
+        height: 20px;
+        background: #555;
+        border-radius: 10px;
+        margin-top: 10px;
+        overflow: hidden;
+    }
+    #health-bar {
+        height: 100%;
+        background: limegreen;
+        width: 100%;
+        transition: width 0.2s;
     }
 </style>
 </head>
 <body>
-<div id="ui">Punkty: <span id="score">0</span> | Życia: <span id="lives">3</span></div>
+<div id="ui">
+    <div>Punkty: <span id="score">0</span></div>
+    <div id="health-bar-container">
+        <div id="health-bar"></div>
+    </div>
+</div>
 <canvas id="gameCanvas"></canvas>
 
 <script>
@@ -39,18 +62,18 @@ canvas.height = window.innerHeight;
 
 // --- Sprites ---
 const playerSprite = new Image();
-playerSprite.src = 'https://i.imgur.com/3W6Yf6P.png'; // sprite sheet gracza
+playerSprite.src = 'https://i.imgur.com/3W6Yf6P.png';
 
 const enemySprite = new Image();
-enemySprite.src = 'https://i.imgur.com/7UuMZft.png'; // sprite sheet wroga
+enemySprite.src = 'https://i.imgur.com/7UuMZft.png';
 
 const bulletImg = new Image();
-bulletImg.src = 'https://i.imgur.com/htQ5X0c.png'; // pocisk
+bulletImg.src = 'https://i.imgur.com/htQ5X0c.png';
 
 // --- Dźwięki ---
-const shootSound = new Audio('https://freesound.org/data/previews/66/66717_931655-lq.mp3'); // strzał
-const hitSound = new Audio('https://freesound.org/data/previews/256/256113_4486188-lq.mp3'); // trafienie wroga
-const damageSound = new Audio('https://freesound.org/data/previews/331/331912_3248244-lq.mp3'); // uderzenie gracza
+const shootSound = new Audio('https://freesound.org/data/previews/66/66717_931655-lq.mp3');
+const hitSound = new Audio('https://freesound.org/data/previews/256/256113_4486188-lq.mp3');
+const damageSound = new Audio('https://freesound.org/data/previews/331/331912_3248244-lq.mp3');
 
 // --- Gracz ---
 const player = {
@@ -60,6 +83,7 @@ const player = {
     height: 50,
     speed: 7,
     lives: 3,
+    maxLives: 3,
     frameX: 0,
     maxFrame: 3,
     frameTimer: 0,
@@ -159,16 +183,20 @@ function update() {
            player.y + player.height > enemy.y) {
                enemies.splice(i,1);
                player.lives--;
-               document.getElementById('lives').innerText = player.lives;
+               document.getElementById('health-bar').style.width = (player.lives/player.maxLives*100) + '%';
                damageSound.currentTime = 0;
                damageSound.play();
+
+               // Ekran czerwienieje przy uderzeniu
+               ctx.fillStyle = 'rgba(255,0,0,0.3)';
+               ctx.fillRect(0,0,canvas.width,canvas.height);
+
                if(player.lives <= 0){
                    alert("Koniec gry! Punkty: " + score);
                    window.location.reload();
                }
         }
 
-        // Wrogowie poza ekranem
         if(enemy && enemy.y > canvas.height) enemies.splice(i,1);
     }
 }
