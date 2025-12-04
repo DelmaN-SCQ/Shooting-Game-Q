@@ -1,103 +1,13 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Shootning Game Q Beta-Test</title>
-<style>
-html,body{margin:0;height:100%;background:#000;overflow:hidden;font-family:Arial;}
-canvas{display:block;margin:0 auto;background:#06060b;}
-#menu{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;justify-content:center;align-items:center;background:rgba(0,0,0,0.85);color:#0ff;font-size:28px;flex-direction:column;}
-button{font-size:20px;padding:10px 20px;margin-top:15px;cursor:pointer;background:#111;color:#0ff;border:2px solid #0ff;border-radius:6px;}
-</style>
+  <meta charset="UTF-8">
+  <title>Strzelanka Arcade</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-<div id="menu">
-  <div>Neon 2D Strzelanka</div>
-  <button id="startBtn">START</button>
-</div>
-
-<canvas id="game" width="640" height="800"></canvas>
-
-<script>
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-const W = canvas.width, H = canvas.height;
-
-// Menu
-const menu = document.getElementById('menu');
-document.getElementById('startBtn').onclick = ()=>{menu.style.display='none'; startGame();};
-
-// Player
-const player = {x:W/2,y:H-60,w:40,h:40,speed:5};
-const keys = {};
-window.addEventListener('keydown', e=>keys[e.key]=true);
-window.addEventListener('keyup', e=>keys[e.key]=false);
-
-// Entities
-let bullets=[], enemies=[];
-function spawnBullet(x,y){ bullets.push({x,y,w:8,h:16}); }
-function spawnEnemy(){ enemies.push({x:Math.random()*(W-50),y:-50,w:50,h:50}); }
-
-// Game Loop
-function update(dt){
-  // Player movement
-  if(keys["ArrowLeft"]) player.x -= player.speed;
-  if(keys["ArrowRight"]) player.x += player.speed;
-  player.x = Math.max(20, Math.min(W-20, player.x));
-
-  // Shooting
-  if(keys[" "] && (!player.lastShot || performance.now()-player.lastShot>300)){
-    spawnBullet(player.x-10,player.y-20); 
-    spawnBullet(player.x+10,player.y-20);
-    player.lastShot = performance.now();
-  }
-
-  // Bullets
-  bullets.forEach(b=>b.y-=300*dt);
-  bullets = bullets.filter(b=>b.y>-20);
-
-  // Enemies
-  if(Math.random()<0.02) spawnEnemy();
-  enemies.forEach(e=>e.y+=100*dt);
-  enemies = enemies.filter(e=>e.y<H+50);
-}
-
-function draw(){
-  ctx.clearRect(0,0,W,H);
-
-  // Player (triangle)
-  ctx.fillStyle="#0ff";
-  ctx.beginPath();
-  ctx.moveTo(player.x, player.y-20);
-  ctx.lineTo(player.x-20, player.y+20);
-  ctx.lineTo(player.x+20, player.y+20);
-  ctx.closePath();
-  ctx.fill();
-
-  // Bullets
-  ctx.fillStyle="#ff0";
-  bullets.forEach(b=>ctx.fillRect(b.x-b.w/2,b.y-b.h/2,b.w,b.h));
-
-  // Enemies
-  ctx.fillStyle="#f0f";
-  enemies.forEach(e=>{
-    ctx.fillRect(e.x,e.y,e.w,e.h);
-  });
-}
-
-let last = performance.now();
-function loop(now){
-  const dt = (now-last)/1000;
-  last=now;
-  update(dt);
-  draw();
-  requestAnimationFrame(loop);
-}
-
-function startGame(){ last=performance.now(); loop(last); }
-</script>
-
+  <h1>Strzelanka Arcade</h1>
+  <canvas id="gameCanvas" width="500" height="600"></canvas>
+  <script src="game.js"></script>
 </body>
 </html>
