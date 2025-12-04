@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Strzelanka 2D — QCoins i sklep</title>
+<title>SGQ 2D — QCoins i sklep</title>
 <style>
 :root{--bg:#0b0b0f;--panel:#0f1720;--accent:#00e0a8;--muted:#99a0ac;}
 html,body{height:100%;margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);color:#e6eef6;}
@@ -62,7 +62,7 @@ canvas{display:block;background:#050607;width:760px;height:540px;}
 <div class="stat"><div class="label">Fala</div><div class="value" id="wave">0</div></div>
 <div class="stat"><div class="label">Życie (HP)</div><div class="value" id="hpSmall">100</div><div class="controls">Gdy tarcza &gt;0, pociski absorbowane.</div></div>
 <div class="title" style="margin-top:6px">Sklep pocisków</div>
-<div class="stat" id="shop">
+<div class="stat" id="shopPanel">
 <div style="font-size:13px;color:var(--muted)">Wybierz kolor pocisku (kosmetyczne). Każdy kosztuje QCoins przy pierwszym zakupie.</div>
 <div id="shopItemsPanel"></div>
 </div>
@@ -91,9 +91,21 @@ canvas.addEventListener('click',()=>keys.space=true);
 function showShop(){document.getElementById('menu').style.display='none';document.getElementById('shopMenu').style.display='flex';renderShop();}
 function backToMenu(){document.getElementById('shopMenu').style.display='none';document.getElementById('menu').style.display='flex';}
 
-window.startGame=function(){document.getElementById('menu').style.display='none';running=true;/* tutaj pełna inicjalizacja gry i pętla */};
+window.startGame = function() {
+  document.getElementById('menu').style.display='none';
+  running = true;
+  // Reset gry
+  score=0; wave=0; shieldCount=0; playerHP=playerMaxHP;
+  bullets=[]; enemyBullets=[]; enemies=[]; drops=[]; explosions=[];
+  qcoins=storage.get('qcoins',qcoins);
 
-// Tutaj wstaw pełne funkcje gry (spawnWave, playerShoot, enemyShoot, update, draw, loop, showGameOver, renderShop)
+  spawnPlayer();
+  spawnWave(4);
+  updateUI();
+  loop();
+};
+
+// Tutaj należy wstawić pełne funkcje gry: spawnPlayer, spawnWave, playerShoot, enemyShoot, update, draw, loop, updateUI, renderShop, showGameOver
 </script>
 </body>
 </html>
