@@ -43,10 +43,18 @@ function spawnShield(x, y) {
   shields.push({ x: x, y: y, size: 15 });
 }
 
-// Kolizje
+// Kolizje kwadrat–kwadrat
 function isColliding(a, b) {
   return a.x < b.x + b.size && a.x + a.size > b.x &&
          a.y < b.y + b.size && a.y + a.size > b.y;
+}
+
+// Kolizja gracz–koło (tarcza)
+function isCollidingCircle(player, shield) {
+  const dx = (player.x + player.size/2) - (shield.x + shield.size/2);
+  const dy = (player.y + player.size/2) - (shield.y + shield.size/2);
+  const distance = Math.sqrt(dx*dx + dy*dy);
+  return distance < player.size/2 + shield.size/2;
 }
 
 function update() {
@@ -107,7 +115,7 @@ function update() {
 
   // Kolizje tarcza-gracz
   shields.forEach((s, i) => {
-    if(isColliding(s, player)) {
+    if(isCollidingCircle(player, s)) {
       player.hp += 20;
       if(player.hp > player.maxHp) player.hp = player.maxHp;
       shields.splice(i, 1);
@@ -115,7 +123,6 @@ function update() {
   });
 }
 
-// Rysowanie gracza, pocisków, przeciwników i tarcz
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -150,7 +157,6 @@ function draw() {
   enemies.forEach(e => {
     ctx.fillStyle = 'red';
     ctx.fillRect(e.x, e.y, e.size, e.size);
-    // Pasek HP przeciwnika
     ctx.fillStyle = 'green';
     ctx.fillRect(e.x, e.y - 5, e.size * (e.hp / e.maxHp), 3);
   });
@@ -203,7 +209,6 @@ document.addEventListener('keydown', (e) => {
     }
   }
   if(gameState === "gameover" && e.key.toLowerCase() === 'r') {
-    // Reset gry
     player.hp = player.maxHp;
     player.x = 270;
     bullets = [];
