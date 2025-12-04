@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Strzelanka 2D — zoptymalizowana wersja</title>
+<title>Strzelanka 2D — Beta z QCoins i sklepem</title>
 <style>
 :root{ --bg:#0b0b0f; --panel:#0f1720; --accent:#00e0a8; --danger:#ff5c5c; --muted:#99a0ac; }
 html,body{height:100%;margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);color:#e6eef6}
@@ -55,7 +55,7 @@ canvas{display:block;background:#050607;width:760px;height:540px}
       <div class="stat"><div class="label">Życie (HP)</div><div class="value" id="hpSmall">100</div><div class="controls">Gdy tarcza &gt;0, pociski absorbowane.</div></div>
       <div class="title" style="margin-top:6px">Sklep pocisków</div>
       <div class="stat" id="shop">
-        <div style="font-size:13px;color:var(--muted)">Wybierz kolor pocisku (kosmetyczne). Każdy kosztuje QCoins pierwszym zakupie.</div>
+        <div style="font-size:13px;color:var(--muted)">Wybierz kolor pocisku (kosmetyczne). Każdy kosztuje QCoins przy pierwszym zakupie.</div>
         <div id="shopItems"></div>
       </div>
       <div class="stat"><div class="label">Sterowanie</div><div class="controls">W/A/S/D lub ←↑↓→ — ruch. Spacja lub klik — strzał.</div></div>
@@ -64,64 +64,43 @@ canvas{display:block;background:#050607;width:760px;height:540px}
 </div>
 
 <script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-
-let running=false, difficulty=1, score=0, wave=0, shieldCount=0, playerMaxHP=100, playerHP=100, qcoins=0;
+const canvas=document.getElementById('gameCanvas');
+const ctx=canvas.getContext('2d');
+let running=false,difficulty=1,score=0,wave=0,shieldCount=0,playerMaxHP=100,playerHP=100,qcoins=0;
 const keys={w:false,a:false,s:false,d:false,up:false,down:false,left:false,right:false,space:false};
-let player, bullets=[], enemyBullets=[], enemies=[], drops=[], explosions=[];
-
-/* shop */
+let player,bullets=[],enemyBullets=[],enemies=[],drops=[],explosions=[];
 const shopData=[{id:'yellow',label:'Żółty',color:'#ffe18b',cost:0},{id:'pink',label:'Różowy',color:'#ff9bd1',cost:25},{id:'cyan',label:'Błękitny',color:'#9ef0ff',cost:50},{id:'purple',label:'Fiolet',color:'#cda1ff',cost:90},{id:'gold',label:'Złoty',color:'#ffdc7a',cost:150}];
 const storage={get(k,d){try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 let owned=storage.get('ownedBullets',{yellow:true});
 let selectedBullet=storage.get('selectedBullet','yellow');
 qcoins=storage.get('qcoins',0);
-
-/* sprites */
 function makeSprite(w,h,draw){const s=document.createElement('canvas');s.width=w;s.height=h;const c=s.getContext('2d');draw(c,w,h);const img=new Image();img.src=s.toDataURL();return img;}
 const sprites={};
 sprites.player=makeSprite(48,28,(c,w,h)=>{c.fillStyle='#00e0a8';c.beginPath();c.moveTo(4,h-4);c.lineTo(w/2,4);c.lineTo(w-4,h-4);c.closePath();c.fill();c.fillStyle='#072a22';c.fillRect(w/2-6,6,12,8);});
 sprites.enemy=makeSprite(40,24,(c,w,h)=>{c.fillStyle='#ff5c5c';c.fillRect(2,4,w-4,h-8);c.fillStyle='#7a0b0b';c.fillRect(6,8,w-12,6);});
 sprites.shield=makeSprite(20,20,(c,w,h)=>{const g=c.createRadialGradient(w/2,h/2,1,w/2,h/2,w/2);g.addColorStop(0,'#bff9e6');g.addColorStop(1,'#00b37a');c.fillStyle=g;c.beginPath();c.arc(w/2,w/2,w/2-1,0,Math.PI*2);c.fill();});
-
-/* sounds */
 const sounds={shoot:new Audio('https://actions.google.com/sounds/v1/alarms/beep_short.ogg'),hit:new Audio('https://actions.google.com/sounds/v1/cartoon/pop.ogg'),boom:new Audio('https://actions.google.com/sounds/v1/explosions/explosion.ogg'),pickup:new Audio('https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg')};
 for(let k in sounds)sounds[k].volume=0.08;
-
-/* input */
-window.addEventListener('keydown',e=>{if(e.code==='KeyW')keys.w=true;if(e.code==='KeyA')keys.a=true;if(e.code==='KeyS')keys.s=true;if(e.code==='KeyD')keys.d=true;if(e.code==='ArrowUp')keys.up=true;if(e.code==='ArrowLeft')keys.left=true;if(e.code==='ArrowDown')keys.down=true;if(e.code==='ArrowRight')keys.right=true;if(e.code==='Space'){keys.space=true;e.preventDefault();}});
+window.addEventListener('keydown',e=>{if(e.code==='KeyW')keys.w=true;if(e.code==='KeyA')keys.a=true;if(e.code==='KeyS')keys.s=true;if(e.code==='KeyD')keys.d=true;if(e.code==='ArrowUp')keys.up=true;if(e.code==='ArrowLeft')keys.left=true;if(e.code==='ArrowDown')keys.down=true;if(e.code==='ArrowRight')keys.right=true;if(e.code==='Space')keys.space=true;e.preventDefault();});
 window.addEventListener('keyup',e=>{if(e.code==='KeyW')keys.w=false;if(e.code==='KeyA')keys.a=false;if(e.code==='KeyS')keys.s=false;if(e.code==='KeyD')keys.d=false;if(e.code==='ArrowUp')keys.up=false;if(e.code==='ArrowLeft')keys.left=false;if(e.code==='ArrowDown')keys.down=false;if(e.code==='ArrowRight')keys.right=false;if(e.code==='Space')keys.space=false;});
 canvas.addEventListener('click',()=>keys.space=true);
-
 function rand(a,b){return Math.random()*(b-a)+a;}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 function rectColl(a,b){return a.x<b.x+(b.w||0)&&a.x+(a.w||0)>b.x&&a.y<b.y+(b.h||0)&&(a.y+(a.h||0))>b.y;}
-
-/* player */
 function spawnPlayer(){player={x:canvas.width/2-24,y:canvas.height-90,w:48,h:28,speed:4.2,fireRate:12,fireCooldown:0,shields:0};playerHP=playerMaxHP;updateUI();}
-
-/* ENEMY SPAWN SYSTEM */
-let spawnCooldown=0; const MAX_ENEMIES=8; const BASE_SPAWN_DELAY=60; const DIFFICULTY_SPAWN_MULT=0.85;
+let spawnCooldown=0;const MAX_ENEMIES=8;const BASE_SPAWN_DELAY=60;const DIFFICULTY_SPAWN_MULT=0.85;
 function spawnEnemy(){enemies.push({x:rand(20,canvas.width-60),y:rand(-260,-40),w:40,h:24,speed:0.6+difficulty*0.4+rand(0,0.8),hp:20+difficulty*10,maxhp:20+difficulty*10,fireCooldown:Math.floor(rand(80,200)),aim:Math.random()<0.6});}
 function handleEnemySpawning(){if(spawnCooldown>0){spawnCooldown--;return;}if(enemies.length>=MAX_ENEMIES)return;spawnEnemy();spawnCooldown=Math.floor(BASE_SPAWN_DELAY*Math.pow(DIFFICULTY_SPAWN_MULT,difficulty));}
 
-/* shooting */
 function playerShoot(){if(player.fireCooldown>0)return;const color=shopData.find(s=>s.id===selectedBullet).color||'#ffe18b';bullets.push({x:player.x+player.w/2-6,y:player.y-10,w:8,h:14,speed:10,color});player.fireCooldown=player.fireRate;sounds.shoot.currentTime=0;sounds.shoot.play();}
 function enemyShoot(e){const bx=e.x+e.w/2,by=e.y+e.h+4;let vx=0,vy=3+difficulty*0.6;if(e.aim){const dx=(player.x+player.w/2)-bx,dy=(player.y+player.h/2)-by,mag=Math.sqrt(dx*dx+dy*dy)||1,speed=3.2+difficulty*0.6;vx=dx/mag*speed*(0.85+Math.random()*0.5);vy=dy/mag*speed*(0.85+Math.random()*0.35);} enemyBullets.push({x:bx-6,y:by,w:10,h:12,vx,vy,from:'enemy'});}
 function spawnDrop(x,y){drops.push({x:x-9,y:y,size:18,vy:1.6+Math.random()*1.2});}
 function spawnExplosion(x,y,size=28){explosions.push({x,y,r:6,maxR:size,alpha:1});sounds.boom.currentTime=0;sounds.boom.play();}
-
 function updateUI(){document.getElementById('score').textContent=score;document.getElementById('shieldCount').textContent=shieldCount;document.getElementById('wave').textContent=wave;document.getElementById('hpSmall').textContent=Math.max(0,Math.floor(playerHP));document.getElementById('qcoins').textContent=qcoins;const hpPct=clamp(playerHP/playerMaxHP*100,0,100);const hpFill=document.getElementById('hpFill');hpFill.style.width=hpPct+'%';if(hpPct>60)hpFill.style.background='linear-gradient(90deg,#40ff9d,#00b37a)';else if(hpPct>30)hpFill.style.background='linear-gradient(90deg,#ffd86b,#ff8a4b)';else hpFill.style.background='linear-gradient(90deg,#ff8a4b,#ff5c5c)';}
+
+function renderShop(){const shop=document.getElementById('shopItems');shop.innerHTML='';shopData.forEach(item=>{const ownedFlag=!!owned[item.id];const div=document.createElement('div');div.className='shop-item';const left=document.createElement('div');left.innerHTML=`<div style="font-weight:600">${item.label}</div><div style="font-size:12px;color:var(--muted)">Koszt: ${item.cost} Q</div>`;const right=document.createElement('div');const btn=document.createElement('button');btn.className='btn';btn.style.padding='6px 8px';btn.textContent=ownedFlag?(selectedBullet===item.id?'Wybrany':'Wybierz'):`Kup (${item.cost})`;btn.onclick=()=>{if(ownedFlag){selectedBullet=item.id;storage.set('selectedBullet',selectedBullet);renderShop();}else{if(qcoins>=item.cost){qcoins-=item.cost;owned[item.id]=true;selectedBullet=item.id;storage.set('ownedBullets',owned);storage.set('qcoins',qcoins);storage.set('selectedBullet',selectedBullet);renderShop();updateUI();}else alert('Brak QCoins');}};const preview=document.createElement('div');preview.style.width='28px';preview.style.height='16px';preview.style.borderRadius='4px';preview.style.background=item.color;preview.style.marginRight='8px';preview.style.boxShadow='inset 0 0 6px rgba(255,255,255,0.06)';right.appendChild(preview);right.appendChild(btn);div.appendChild(left);div.appendChild(right);shop.appendChild(div);});}
 
 function update(){if(keys.w||keys.up)player.y-=player.speed;if(keys.s||keys.down)player.y+=player.speed;if(keys.a||keys.left)player.x-=player.speed;if(keys.d||keys.right)player.x+=player.speed;player.x=clamp(player.x,8,canvas.width-player.w-8);player.y=clamp(player.y,8,canvas.height-player.h-60);if(keys.space)playerShoot();if(player.fireCooldown>0)player.fireCooldown--;
 bullets.forEach((b,i)=>{b.y-=b.speed;if(b.y<-40)bullets.splice(i,1);});
 enemyBullets.forEach((b,i)=>{b.x+=b.vx||0;b.y+=b.vy||b.speed||3;if(b.y>canvas.height+40||b.x<-80||b.x>canvas.width+80)enemyBullets.splice(i,1);else if(rectColl(b,player)){enemyBullets.splice(i,1);if(shieldCount>0){shieldCount=Math.max(0,shieldCount-1);document.getElementById('shieldCount').textContent=shieldCount;sounds.pickup.currentTime=0;sounds.pickup.play();}else{playerHP-=12+difficulty*2;spawnExplosion(player.x+player.w/2,player.y+player.h/2,32);sounds.hit.currentTime=0;sounds.hit.play();if(playerHP<=0){running=false;storage.set('qcoins',qcoins);setTimeout(showGameOver,120);}}updateUI();}});
-enemies.forEach((e,ei)=>{e.y+=e.speed;if(e.fireCooldown>0)e.fireCooldown--;else{enemyShoot(e);e.fireCooldown=Math.floor(rand(90-difficulty*12,220-difficulty*20));if(e.fireCooldown<40)e.fireCooldown=40;}if(e.y>canvas.height+50)enemies.splice(ei,1);});
-bullets.forEach((b,bi)=>{enemies.forEach((e,ei)=>{if(rectColl(b,e)){e.hp-=28;bullets.splice(bi,1);if(e.hp<=0){score++;qcoins+=Math.floor(5+difficulty*2+Math.random()*6);spawnExplosion(e.x+e.w/2,e.y+e.h/2,40);if(Math.random()<0.35)spawnDrop(e.x+e.w/2,e.y+e.h/2);enemies.splice(ei,1);sounds.hit.currentTime=0;sounds.hit.play();updateUI();storage.set('qcoins',qcoins);}}}});
-drops.forEach((d,di)=>{d.y+=d.vy;d.x+=Math.sin((d.y+di)*0.02)*0.6;if(rectColl(d,player)){shieldCount++;drops.splice(di,1);document.getElementById('shieldCount').textContent=shieldCount;sounds.pickup.currentTime=0;sounds.pickup.play();}if(d.y>canvas.height+30)drops.splice(di,1);});
-explosions.forEach((ex,ix)=>{ex.r+=2.6;ex.alpha-=0.04;if(ex.alpha<=0)explosions.splice(ix,1);});
-handleEnemySpawning();
-updateUI();}
-
-function draw(){ctx.clearRect(0,0,canvas.width
+enemies.forEach((e,ei)=>{e.y+=e.speed;if(e.fireCooldown>0)e.fireCooldown--;else{enemyShoot(e);e.fireCooldown=Math.floor(rand(90-difficulty*12,220-difficulty*20));if(e.fireCooldown<40)e.fireCooldown=40;}if(e.y>
