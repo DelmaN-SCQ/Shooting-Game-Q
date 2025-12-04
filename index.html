@@ -2,13 +2,17 @@
 <html lang="pl">
 <head>
   <meta charset="UTF-8">
-  <title>Shooting Game Q Beta</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Shooting Game Q BetaTest</title>
+  <style>
+    body { margin: 0; background: black; overflow: hidden; }
+    canvas { display: block; margin: auto; background: #000; }
+  </style>
 </head>
 <body>
-  <h1>BETA!!</h1>
-  <canvas id="gameCanvas" width="600" height="600"></canvas>
-  <script src="game.js"></script>
+  <canvas id="gameCanvas" width="500" height="600"></canvas>
+
+  <!-- Wymuszenie niecache’owania JS -->
+  <script src="game.js?v=1"></script>
 </body>
 </html>
 
