@@ -39,6 +39,7 @@ canvas{display:block;background:#050607;width:760px;height:540px;}
 <h1 style="margin:6px 0 0 0">Start</h1>
 <div class="menu-row">
 <button class="btn" onclick="startGame()">Graj</button>
+<button class="btn" onclick="showShop()">Sklep</button>
 </div>
 <div style="margin-top:10px;color:var(--muted);font-size:13px">Ruch: WASD lub strzałki, Strzał: Spacja lub klik</div>
 </div>
@@ -77,10 +78,12 @@ window.addEventListener('keydown',e=>{if(e.code==='KeyW')keys.w=true;if(e.code==
 window.addEventListener('keyup',e=>{if(e.code==='KeyW')keys.w=false;if(e.code==='KeyA')keys.a=false;if(e.code==='KeyS')keys.s=false;if(e.code==='KeyD')keys.d=false;if(e.code==='ArrowUp')keys.up=false;if(e.code==='ArrowLeft')keys.left=false;if(e.code==='ArrowDown')keys.down=false;if(e.code==='ArrowRight')keys.right=false;if(e.code==='Space')keys.space=false;});
 canvas.addEventListener('click',()=>keys.space=true);
 
-// Tutaj wstaw pełne funkcje gry (spawnWave, playerShoot, enemyShoot, update, draw, loop, startGame, showGameOver, renderShop)
-// Bez wyboru trybu — startGame() uruchamia grę od razu z ustawioną trudnością domyślną.
+function showShop(){document.getElementById('menu').style.display='none';document.getElementById('shop').style.display='block';renderShop();}
 
-window.startGame=startGame;
+// Tutaj wstaw pełne funkcje gry (spawnWave, playerShoot, enemyShoot, update, draw, loop, startGame, showGameOver, renderShop)
+
+window.startGame=function(){document.getElementById('menu').style.display='none';running=true;/* dodaj inicjalizację gry */};
+window.showShop=showShop;
 </script>
 </body>
 </html>
