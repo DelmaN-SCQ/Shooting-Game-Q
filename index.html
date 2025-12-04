@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Strzelanka 2D</title>
+<title>SGQ Beta</title>
 <style>
 :root{--bg:#0b0b0f;--panel:#0f1720;--accent:#00e0a8;--muted:#99a0ac;}
 html,body{height:100%;margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:var(--bg);color:#e6eef6;}
@@ -32,7 +32,7 @@ canvas{display:block;background:#050607;width:760px;height:540px;}
 <canvas id="gameCanvas" width="760" height="540"></canvas>
 <div class="hpbar" id="playerHPbar"><div class="hpfill" id="hpFill"></div></div>
 <div id="menu" class="menu-box">
-<div style="font-size:13px;color:var(--muted)">Strzelanka 2D</div>
+<div style="font-size:13px;color:var(--muted)">SGQ Beta</div>
 <h1 style="margin:6px 0 0 0">Start</h1>
 <div class="menu-row">
 <button class="btn" onclick="startGame()">Graj</button>
@@ -67,7 +67,7 @@ function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 function rectColl(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;}
 
 function spawnPlayer(){player={x:canvas.width/2-24,y:canvas.height-90,w:48,h:28,speed:4.2,fireRate:12,fireCooldown:0,shields:0};playerHP=playerMaxHP;updateUI();}
-function spawnWave(n){wave++;document.getElementById('wave').textContent=wave;const toSpawn=Math.min(n,MAX_ENEMIES);for(let i=0;i<toSpawn;i++){enemies.push({x:rand(20,canvas.width-60),y:rand(-260,-40)-i*40,w:40,h:24,speed:0.6+rand(0,0.8),hp:20,maxhp:20,fireCooldown:Math.floor(rand(80,200)),aim:true});}}
+function spawnWave(n){wave++;document.getElementById('wave').textContent=wave;const toSpawn=Math.min(n,MAX_ENEMIES);for(let i=0;i<toSpawn;i++){enemies.push({x:rand(20,canvas.width-60),y:rand(-260,-40)-i*40,w:40,h:24,speed:0.6+rand(0,0.8),hp:20,maxhp:20});}}
 
 function playerShoot(){if(player.fireCooldown>0)return;bullets.push({x:player.x+player.w/2-6,y:player.y-10,w:8,h:14,color:'#ffe18b'});player.fireCooldown=player.fireRate;}
 
@@ -80,7 +80,6 @@ function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#02
 function loop(){if(!running)return;update();draw();requestAnimationFrame(loop);}
 
 function startGame(){document.getElementById('menu').style.display='none';running=true;score=0;wave=0;shieldCount=0;playerHP=playerMaxHP;bullets=[];enemies=[];spawnPlayer();spawnWave(4);updateUI();loop();}
-
 </script>
 </body>
 </html>
