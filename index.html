@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SGQ Beta</title>
+<title>Strzelanka SGQ</title>
 <style>
 body {margin:0; background:#0b0b0f; font-family:sans-serif; color:white; text-align:center;}
 #gameWrap {position:relative; width:760px; height:540px; margin:auto; background:#050607;}
@@ -35,48 +35,43 @@ button {padding:8px 12px; border:none; border-radius:8px; background:#0b1320; co
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-let running = false;
-let score = 0, wave = 0;
-let playerHP = 100, maxHP = 100;
-
-const keys = {};
+let running=false, score=0, wave=0;
+let playerHP=100, maxHP=100;
+const keys={};
 let player, bullets=[], enemies=[];
 
-// Sprites
-const playerImg = new Image();
-playerImg.src = 'player.png'; // podmień na własny plik PNG
-const enemyImg = new Image();
-enemyImg.src = 'enemy.png';   // podmień na własny plik PNG
+// Sprite'y opcjonalne
+const playerImg=new Image(); playerImg.src='player.png';
+const enemyImg=new Image(); enemyImg.src='enemy.png';
 
-window.addEventListener('keydown', e => { keys[e.code] = true; if(e.code==='Space') e.preventDefault(); });
-window.addEventListener('keyup', e => { keys[e.code] = false; });
+window.addEventListener('keydown', e => { keys[e.code]=true; if(e.code==='Space') e.preventDefault(); });
+window.addEventListener('keyup', e => { keys[e.code]=false; });
 
 function rand(min,max){ return Math.random()*(max-min)+min; }
 
-function spawnPlayer(){ 
-  player = {x:canvas.width/2-20, y:canvas.height-60, w:40, h:40, speed:4, fireCooldown:0};
-  playerHP = maxHP; updateUI();
+function spawnPlayer(){
+  player={x:canvas.width/2-24, y:canvas.height-70, w:48, h:48, speed:4, fireCooldown:0};
+  playerHP=maxHP; updateUI();
 }
 
 function spawnWave(n){
-  wave++;
-  document.getElementById('wave').textContent = wave;
+  wave++; document.getElementById('wave').textContent=wave;
   for(let i=0;i<n;i++){
-    enemies.push({x:rand(20,canvas.width-60), y:rand(-200,-40)-i*60, w:40, h:40, speed:1+rand(0,0.5)});
+    enemies.push({x:rand(20,canvas.width-60), y:rand(-200,-40)-i*60, w:48, h:48, speed:1+rand(0,0.5)});
   }
 }
 
 function playerShoot(){
   if(player.fireCooldown>0) return;
   bullets.push({x:player.x+player.w/2-4, y:player.y-10, w:8, h:14, color:'#ffe18b'});
-  player.fireCooldown = 12;
+  player.fireCooldown=12;
 }
 
 function updateUI(){
-  document.getElementById('score').textContent = score;
-  document.getElementById('hpText').textContent = playerHP;
-  const pct = Math.max(0, playerHP/maxHP*100);
-  document.getElementById('hpFill').style.width = pct + '%';
+  document.getElementById('score').textContent=score;
+  document.getElementById('hpText').textContent=playerHP;
+  const pct=Math.max(0,playerHP/maxHP*100);
+  document.getElementById('hpFill').style.width=pct+'%';
 }
 
 function update(){
@@ -84,8 +79,8 @@ function update(){
   if(keys['KeyS']||keys['ArrowDown']) player.y+=player.speed;
   if(keys['KeyA']||keys['ArrowLeft']) player.x-=player.speed;
   if(keys['KeyD']||keys['ArrowRight']) player.x+=player.speed;
-  player.x = Math.max(0, Math.min(canvas.width-player.w, player.x));
-  player.y = Math.max(0, Math.min(canvas.height-player.h, player.y));
+  player.x=Math.max(0,Math.min(canvas.width-player.w, player.x));
+  player.y=Math.max(0,Math.min(canvas.height-player.h, player.y));
   
   if(keys['Space']) playerShoot();
   if(player.fireCooldown>0) player.fireCooldown--;
@@ -95,7 +90,7 @@ function update(){
   enemies.forEach((e,i)=>{
     e.y+=e.speed;
     bullets.forEach((b,j)=>{
-      if(b.x < e.x + e.w && b.x + b.w > e.x && b.y < e.y + e.h && b.y + b.h > e.y){
+      if(b.x < e.x+e.w && b.x+b.w>e.x && b.y<e.y+e.h && b.y+b.h>e.y){
         enemies.splice(i,1); bullets.splice(j,1); score+=10;
       }
     });
@@ -110,7 +105,7 @@ function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
   // gracz
-  if(playerImg.complete) ctx.drawImage(playerImg, player.x, player.y, player.w, player.h);
+  if(playerImg.complete) ctx.drawImage(playerImg,player.x,player.y,player.w,player.h);
   else { ctx.fillStyle='#00e0a8'; ctx.fillRect(player.x,player.y,player.w,player.h); }
 
   // pociski
@@ -127,7 +122,7 @@ function loop(){ if(!running) return; update(); draw(); requestAnimationFrame(lo
 
 function startGame(){
   document.getElementById('menu').style.display='none';
-  running = true; score=0; wave=0; playerHP=maxHP; bullets=[]; enemies=[];
+  running=true; score=0; wave=0; playerHP=maxHP; bullets=[]; enemies=[];
   spawnPlayer(); spawnWave(4); updateUI(); loop();
 }
 </script>
