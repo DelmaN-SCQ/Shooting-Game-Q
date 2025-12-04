@@ -1,286 +1,114 @@
-<!doctype html>
-<html lang="pl">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Strzelanka — Pełna wersja (HTML5 Canvas)</title>
-  <style>
-    :root{--bg:#06060b;--panel:#0d0f17;--accent:#0ff;--danger:#ff4d4d}
-    html,body{height:100%;margin:0;background:var(--bg);font-family:Inter,system-ui,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial}
-    .wrap{display:flex;align-items:center;justify-content:center;height:100%}
-    canvas{background:linear-gradient(#001,#00191f);border:6px solid #111;border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,.7)}
-    .ui{position:fixed;left:20px;top:20px;color:#cde;padding:10px;background:rgba(2,6,12,.4);border-radius:8px}
-    .help{position:fixed;right:20px;top:20px;color:#cde;padding:10px;background:rgba(2,6,12,.4);border-radius:8px;max-width:260px}
-    .btn{display:inline-block;padding:6px 10px;background:#0b1220;border-radius:6px;color:#9df;margin:6px 2px;cursor:pointer}
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <canvas id="game" width="640" height="800"></canvas>
-  </div>
+# Generating modern 2D "neon" enemy sprites, projectile, power-up, and an explosion sprite sheet.
+# Outputs are saved to /mnt/data and links will be provided in the assistant response.
+from PIL import Image, ImageDraw, ImageFilter, ImageEnhance
+import math, os
 
-  <div class="ui" id="hud">
-    <div>Lives: <span id="lives">3</span></div>
-    <div>HP: <span id="hp">100</span></div>
-    <div>Score: <span id="score">0</span></div>
-    <div>Wave: <span id="wave">1</span></div>
-    <div style="margin-top:6px"><span class="btn" id="restart">Restart</span></div>
-  </div>
+out_dir = "/mnt/data/modern_sprites"
+os.makedirs(out_dir, exist_ok=True)
 
-  <div class="help">
-    <b>Sterowanie</b>
-    <div>← → – ruch | Spacja – strzał | Z – power-up | P – pauza</div>
-    <hr />
-    Ta wersja ma: grafiki narysowane na canvas (prostymi kształtami), tło (gwiazdy), pasek HP, eksplozje, punkty, bossy, dźwięki wygenerowane WebAudio i power-upy.
-  </div>
+def neon_shape(size, shape='triangle', color=(0,200,255), glow_color=(0,255,200)):
+    w,h = size
+    base = Image.new("RGBA", (w,h), (0,0,0,0))
+    draw = ImageDraw.Draw(base)
+    cx, cy = w//2, h//2
+    # draw core shape
+    if shape == 'triangle':
+        pts = [(cx, cy-18), (cx+20, cy+16), (cx-20, cy+16)]
+        draw.polygon(pts, fill=color+(255,))
+    elif shape == 'diamond':
+        pts = [(cx, cy-20), (cx+20, cy), (cx, cy+20), (cx-20, cy)]
+        draw.polygon(pts, fill=color+(255,))
+    elif shape == 'hex':
+        pts = [(cx-12, cy-22),(cx+12, cy-22),(cx+22, cy),(cx+12, cy+22),(cx-12, cy+22),(cx-22, cy)]
+        draw.polygon(pts, fill=color+(255,))
+    elif shape == 'wing':
+        draw.ellipse([cx-22, cy-12, cx-6, cy+12], fill=color+(255,))
+        draw.ellipse([cx+6, cy-12, cx+22, cy+12], fill=color+(255,))
+        draw.rectangle([cx-6, cy-18, cx+6, cy+18], fill=color+(255,))
+    # add cockpit
+    draw.ellipse([cx-8, cy-6, cx+8, cy+10], fill=(255,255,255,200))
+    # glow
+    glow = base.copy().filter(ImageFilter.GaussianBlur(radius=6))
+    enhancer = ImageEnhance.Color(glow)
+    glow = enhancer.enhance(1.2)
+    # tint glow
+    glow_data = glow.getdata()
+    glow = Image.new("RGBA", (w,h))
+    glow.putdata([(glow_color[0], glow_color[1], glow_color[2], int(p[3]*0.8)) for p in glow_data])
+    result = Image.new("RGBA",(w,h),(0,0,0,0))
+    result = Image.alpha_composite(result, glow)
+    result = Image.alpha_composite(result, base)
+    return result
 
-<script>
-// --- Konfiguracja gry ---
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-const W = canvas.width, H = canvas.height;
-let last = performance.now();
-let delta;
+# Create enemy sprites (64x64)
+enemy_files = []
+enemy_variants = [
+    ('enemy_tri', 'triangle', (0,200,255), (0,120,255)),
+    ('enemy_dia', 'diamond', (255,90,255), (200,60,255)),
+    ('enemy_hex', 'hex', (255,160,60), (255,200,120)),
+    ('enemy_wing', 'wing', (120,255,180), (60,200,140)),
+]
+for name, shape, color, glow in enemy_variants:
+    im = neon_shape((64,64), shape=shape, color=color, glow_color=glow)
+    # add slight inner stroke
+    draw = ImageDraw.Draw(im)
+    draw.ellipse([24,26,40,42], outline=(0,0,0,60))
+    path = os.path.join(out_dir, f"{name}.png")
+    im.save(path)
+    enemy_files.append(path)
 
-// HUD
-const elLives = document.getElementById('lives');
-const elHP = document.getElementById('hp');
-const elScore = document.getElementById('score');
-const elWave = document.getElementById('wave');
+# projectile (32x32)
+proj = Image.new("RGBA",(32,32),(0,0,0,0))
+d = ImageDraw.Draw(proj)
+d.ellipse([10,4,22,24], fill=(255,245,120,255))
+proj_glow = proj.filter(ImageFilter.GaussianBlur(radius=3))
+proj_result = Image.alpha_composite(Image.new("RGBA",(32,32),(0,0,0,0)), proj_glow)
+proj_result = Image.alpha_composite(proj_result, proj)
+proj_path = os.path.join(out_dir,"proj.png")
+proj_result.save(proj_path)
 
-// Game state
-let running = true;
-let score = 0, wave = 1;
-let lives = 3;
+# power-up (32x32)
+pwr = Image.new("RGBA",(32,32),(0,0,0,0))
+d = ImageDraw.Draw(pwr)
+d.rectangle([8,8,24,24], fill=(100,255,255,255))
+d.rectangle([12,4,20,28], fill=(255,255,255,40))
+pwr_glow = pwr.filter(ImageFilter.GaussianBlur(radius=3))
+pwr_result = Image.alpha_composite(Image.new("RGBA",(32,32),(0,0,0,0)), pwr_glow)
+pwr_result = Image.alpha_composite(pwr_result, pwr)
+pwr_path = os.path.join(out_dir,"powerup.png")
+pwr_result.save(pwr_path)
 
-// Player
-const player = {
-  x: W/2, y: H-80, w: 44, h: 40, speed: 5, hp: 100, maxHp:100,
-  fireRate: 240, lastShot:0, rapidUntil:0, shield:false
-};
+# explosion sprite sheet: 16 frames, each 64x64, arranged horizontally
+frames = 16
+fw = 64; fh = 64
+sheet = Image.new("RGBA",(fw*frames, fh),(0,0,0,0))
+for i in range(frames):
+    frame = Image.new("RGBA",(fw,fh),(0,0,0,0))
+    draw = ImageDraw.Draw(frame)
+    # animated radius
+    t = i / frames
+    maxr = 26
+    r = int(maxr * (0.2 + 0.8 * (1 - (t-0.3)**2)))  # pulse like
+    # gradient circles
+    for j in range(6):
+        alpha = int(200 * (1 - j/6) * (1-t))
+        col = (255, 200 - j*20, 80 + j*10, alpha)
+        draw.ellipse([fw/2 - r - j*3, fh/2 - r - j*3, fw/2 + r + j*3, fh/2 + r + j*3], outline=None, fill=col)
+    # small sparks
+    for k in range(6):
+        ang = k * (math.pi*2/6) + t*10
+        sx = fw/2 + math.cos(ang)*(r+8)
+        sy = fh/2 + math.sin(ang)*(r+8)
+        draw.ellipse([sx-3, sy-3, sx+3, sy+3], fill=(255,220,120,200))
+    # blur a bit
+    frame = frame.filter(ImageFilter.GaussianBlur(radius=1.2))
+    sheet.paste(frame, (i*fw,0), frame)
 
-// Entities
-let bullets=[], enemies=[], particles=[], pickups=[];
-let boss = null;
+explode_path = os.path.join(out_dir,"explosion_sheet.png")
+sheet.save(explode_path)
 
-// Input
-const keys = {};
-window.addEventListener('keydown', e=>{keys[e.key]=true; if(e.key===' '){e.preventDefault();}});
-window.addEventListener('keyup', e=>{keys[e.key]=false});
+# List produced files
+produced = enemy_files + [proj_path, pwr_path, explode_path]
 
-// Audio - small helper to play short sounds with WebAudio
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-function playSound(type, freq=440, time=0){
-  const t = audioCtx.currentTime + time;
-  const o = audioCtx.createOscillator();
-  const g = audioCtx.createGain();
-  o.type = type; o.frequency.setValueAtTime(freq,t);
-  g.gain.setValueAtTime(0.0001,t);
-  g.gain.exponentialRampToValueAtTime(0.12,t+0.01);
-  g.gain.exponentialRampToValueAtTime(0.0001,t+0.2);
-  o.connect(g); g.connect(audioCtx.destination); o.start(t); o.stop(t+0.22);
-}
-
-// Starfield background
-const stars = Array.from({length:120},()=>({x:Math.random()*W,y:Math.random()*H,z:Math.random()*1.5 + 0.5}))
-
-// Helpers
-function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
-function rand(a,b){return a + Math.random()*(b-a)}
-
-// Bullet factory
-function spawnBullet(x,y,dx=0,dy=-8,owner='player'){bullets.push({x,y,dx,dy,w:6,h:12,owner})}
-
-// Enemy factory
-function spawnEnemy(type='small'){
-  if(type==='small'){
-    enemies.push({x:rand(30,W-70),y:-40,w:36,h:36,hp:1,spd:rand(1.2,2.6),type:'small',shootTimer:rand(0,60)});
-  }else if(type==='zig'){
-    enemies.push({x:rand(30,W-70),y:-60,w:44,h:36,hp:2,spd:rand(1,1.8),type:'zig',tick:0});
-  }else if(type==='shooter'){
-    enemies.push({x:rand(30,W-70),y:-70,w:48,h:42,hp:3,spd:1.0,type:'shooter',shootTimer:0});
-  }
-}
-
-// Boss factory
-function spawnBoss(){
-  boss = {x:W/2-120,y:-220,w:240,h:160,hp:120,maxHp:120,phase:0,t:0,dir:1};
-}
-
-// Pickup
-function spawnPickup(x,y,kind){pickups.push({x,y,w:22,h:22,kind,vy:2})}
-
-// Particles for explosion
-function spawnExplosion(x,y,color='orange',count=20){
-  for(let i=0;i<count;i++){particles.push({x,y,vx:rand(-4,4),vy:rand(-4,4),life:rand(30,80),col:color})}
-}
-
-// Collision AABB
-function coll(a,b){return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y}
-
-// GAME LOGIC
-function update(dt){
-  if(!running) return;
-  // Background stars
-  stars.forEach(s=>{s.y += 30*dt*s.z; if(s.y>H) s.y=0;});
-
-  // Player movement
-  if(keys['ArrowLeft'] || keys['a']) player.x -= player.speed;
-  if(keys['ArrowRight'] || keys['d']) player.x += player.speed;
-  player.x = clamp(player.x, 20, W-20);
-
-  // Shooting
-  const now = performance.now();
-  const canRapid = audioCtx.state==='running' && now < player.rapidUntil;
-  const rate = canRapid ? 70 : player.fireRate;
-  if(keys[' '] && now - player.lastShot > rate){
-    player.lastShot = now;
-    // fire pattern
-    spawnBullet(player.x-8, player.y-20, -0.6, -9);
-    spawnBullet(player.x+8, player.y-20, 0.6, -9);
-    playSound('sine', 920 + Math.random()*150);
-  }
-
-  // Other controls
-  if(keys['z']){ // activate pickup fast-fire if available (we'll just grant short rapid)
-    player.rapidUntil = Math.max(player.rapidUntil, performance.now()+1200);
-    keys['z'] = false; playSound('sawtooth',700);
-  }
-  if(keys['p']){running = !running; keys['p']=false}
-  if(keys['r']) reset();
-
-  // Bullets
-  bullets.forEach(b=>{ b.x += b.dx*dt*60; b.y += b.dy*dt*60; });
-  bullets = bullets.filter(b=> b.y > -50 && b.y < H+50 && b.x > -50 && b.x < W+50);
-
-  // Enemies spawn
-  if(Math.random() < 0.02 + wave*0.001) spawnEnemy('small');
-  if(Math.random() < 0.008 + wave*0.0006) spawnEnemy('zig');
-  if(Math.random() < 0.006 + wave*0.0004) spawnEnemy('shooter');
-
-  // Enemies behaviour
-  enemies.forEach((e,i)=>{
-    if(e.type==='small') e.y += e.spd*dt*60;
-    if(e.type==='zig') { e.tick += dt*60; e.x += Math.sin(e.tick*0.12)*2.6; e.y += e.spd*dt*60; }
-    if(e.type==='shooter'){ e.y += e.spd*dt*60; e.shootTimer += dt*60; if(e.shootTimer>90){ spawnBullet(e.x+e.w/2,e.y+e.h/2,0,3,'enemy'); e.shootTimer=0; playSound('square',220)}}
-
-    // enemy hit by player bullet
-    bullets.forEach((b,bi)=>{ if(b.owner==='player' && coll(b,e)){
-        b._kill = true; e.hp--; score += 12; spawnExplosion(b.x,b.y,'yellow',6);
-        playSound('sine',1200);
-        if(e.hp<=0){ spawnExplosion(e.x+e.w/2,e.y+e.h/2,'orange',24); if(Math.random()<0.12) spawnPickup(e.x+e.w/2,e.y+e.h/2, Math.random()<0.5? 'rapid':'hp'); enemies.splice(i,1); }
-    }});
-
-    // enemy reach player or bottom
-    if(e.y > H+40) enemies.splice(i,1);
-    if(coll(e, {x:player.x-18,y:player.y-20,w:player.w,h:player.h})){ // hit player
-      enemies.splice(i,1); damagePlayer(18);
-      spawnExplosion(player.x, player.y, 'white', 18);
-    }
-  });
-
-  // Boss
-  if(!boss && (score > wave*350 + 600)) spawnBoss();
-  if(boss){ boss.t += dt*60; if(boss.y < 30) boss.y += 1.6*dt*60;
-    boss.x += boss.dir * 0.9 * dt*60; if(boss.x < 20 || boss.x > W-boss.w-20) boss.dir *= -1;
-    // phases
-    if(boss.t % 120 < 1) { // shoot waves
-      for(let i=-3;i<=3;i++){ spawnBullet(boss.x+boss.w/2, boss.y+boss.h, i*1.2, 3 + Math.abs(i)*0.4,'enemy') }
-      playSound('sawtooth', 160);
-    }
-    // hit by player bullets
-    bullets.forEach((b,bi)=>{ if(b.owner==='player' && coll(b,boss)) { b._kill=true; boss.hp--; score+=20; spawnExplosion(b.x,b.y,'red',4); playSound('square',1000); if(boss.hp<=0){ spawnExplosion(boss.x+boss.w/2,boss.y+boss.h/2,'orange',120); score += 1200; boss=null; wave++; elWave.textContent = wave; } }});
-  }
-
-  // Enemy bullets hitting player
-  bullets.forEach((b,bi)=>{ if(b.owner==='enemy' && coll(b,{x:player.x-18,y:player.y-24,w:player.w,h:player.h})){ bullets.splice(bi,1); damagePlayer(10); spawnExplosion(b.x,b.y,'white',6); playSound('sine',300); } });
-
-  // Pickups
-  pickups.forEach((p,pi)=>{ p.y += p.vy; if(coll(p,{x:player.x-18,y:player.y-24,w:player.w,h:player.h})){
-      if(p.kind==='rapid'){ player.rapidUntil = performance.now() + 3500; playSound('sine',900); }
-      if(p.kind==='hp'){ player.hp = clamp(player.hp + 30, 0, player.maxHp); playSound('sine',1200); }
-      pickups.splice(pi,1);
-  }});
-
-  // Particles
-  particles.forEach((p,pi)=>{ p.x += p.vx; p.y += p.vy; p.vy += 0.08; p.life--; if(p.life<=0) particles.splice(pi,1); });
-
-  // Wave progression
-  if(score > wave*800){ wave++; elWave.textContent = wave; }
-
-  // Update HUD
-  elLives.textContent = lives; elHP.textContent = Math.max(0, Math.round(player.hp)); elScore.textContent = score;
-}
-
-function damagePlayer(v){ if(player.shield) return; player.hp -= v; playSound('square',200); if(player.hp<=0){ lives--; if(lives>0){ player.hp = player.maxHp; player.x = W/2; player.y = H-80; enemies = []; bullets = []; pickups = []; } else { // game over
-    running = false; playSound('sine',120); }
-  }}
-
-// DRAW
-function draw(){
-  // clear
-  ctx.fillStyle = '#001218'; ctx.fillRect(0,0,W,H);
-
-  // stars
-  ctx.fillStyle = '#fff'; stars.forEach(s=>{ ctx.globalAlpha = clamp(0.1 + s.z*0.6,0.06,1); ctx.fillRect(Math.floor(s.x), Math.floor(s.y), Math.ceil(s.z), Math.ceil(s.z)); });
-  ctx.globalAlpha = 1;
-
-  // pickups
-  pickups.forEach(p=>{ ctx.fillStyle = p.kind==='rapid'?'#aaf':'#afa'; ctx.beginPath(); ctx.arc(p.x,p.y,10,0,Math.PI*2); ctx.fill(); ctx.strokeStyle='#fff2'; ctx.stroke(); });
-
-  // player (ship)
-  ctx.save(); ctx.translate(player.x, player.y);
-  // shield
-  if(player.rapidUntil > performance.now()){ ctx.beginPath(); ctx.arc(0,0,36,0,Math.PI*2); ctx.strokeStyle='rgba(170,255,255,0.12)'; ctx.lineWidth=8; ctx.stroke(); }
-  // ship body
-  ctx.fillStyle = '#0ff'; ctx.beginPath(); ctx.moveTo(0,-18); ctx.lineTo(18,12); ctx.lineTo(8,12); ctx.lineTo(8,20); ctx.lineTo(-8,20); ctx.lineTo(-8,12); ctx.lineTo(-18,12); ctx.closePath(); ctx.fill();
-  ctx.restore();
-
-  // bullets
-  bullets.forEach(b=>{ ctx.fillStyle = b.owner==='player'?'#ff9':'#f88'; ctx.fillRect(b.x-3,b.y-6,b.w,b.h); });
-
-  // enemies
-  enemies.forEach(e=>{
-    ctx.save(); ctx.translate(e.x, e.y);
-    ctx.fillStyle = e.type==='shooter'?'#f55':(e.type==='zig'?'#f9a':'#f45');
-    ctx.fillRect(0,0,e.w,e.h);
-    ctx.restore();
-  });
-
-  // boss
-  if(boss){ ctx.fillStyle = '#b33'; ctx.fillRect(boss.x,boss.y,boss.w,boss.h);
-    // boss hp bar
-    ctx.fillStyle = '#222'; ctx.fillRect(120,12,400,12);
-    ctx.fillStyle = '#f55'; ctx.fillRect(120,12,400*(boss.hp/boss.maxHp),12);
-  }
-
-  // particles
-  particles.forEach(p=>{ ctx.globalAlpha = clamp(p.life/80,0,1); ctx.fillStyle = p.col; ctx.fillRect(p.x,p.y,2,2); });
-  ctx.globalAlpha = 1;
-
-  // HUD overlays
-  ctx.fillStyle = '#fff3'; ctx.fillRect(12,H-52,220,40);
-  ctx.fillStyle = '#000'; ctx.font='14px monospace'; ctx.fillText('HP',18,H-28); ctx.fillText(player.hp|0 + '/' + player.maxHp,65,H-28);
-}
-
-// Main loop
-function loop(ts){ delta = (ts-last)/1000; last = ts; update(delta); draw(); if(running) requestAnimationFrame(loop); else showGameOver(); }
-requestAnimationFrame(loop);
-
-function showGameOver(){ ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.fillRect(0,0,W,H); ctx.fillStyle='#fff'; ctx.font='bold 36px sans-serif'; ctx.textAlign='center'; ctx.fillText('GAME OVER',W/2,H/2-18); ctx.font='20px sans-serif'; ctx.fillText('Naciśnij R aby zagrać ponownie',W/2,H/2+20); }
-
-// Restart/reset
-function reset(){ score=0; wave=1; lives=3; player.hp=player.maxHp; player.x=W/2; enemies=[]; bullets=[]; pickups=[]; particles=[]; boss=null; running=true; }
-
-document.getElementById('restart').addEventListener('click', ()=>{ reset(); });
-
-// Helpful: allow user to click to shoot
-canvas.addEventListener('mousedown', e=>{ if(running){ const rect=canvas.getBoundingClientRect(); const mx=(e.clientX-rect.left); spawnBullet(player.x-2, player.y-20, (mx-player.x)*0.01, -9); playSound('sine',700); } });
-
-// Start unlocked audio on first user gesture
-window.addEventListener('pointerdown', ()=>{ if(audioCtx.state!=='running') audioCtx.resume(); }, {once:true});
-
-</script>
-</body>
-</html>
-
+for p in produced:
+    print(p)
