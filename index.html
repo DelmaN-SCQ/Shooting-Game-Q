@@ -34,7 +34,6 @@ canvas{display:block;background:#050607;width:760px;height:540px;}
 <div class="game-area" id="gameWrap">
 <canvas id="gameCanvas" width="760" height="540"></canvas>
 <div class="hpbar" id="playerHPbar"><div class="hpfill" id="hpFill"></div></div>
-
 <div id="menu" class="menu-box">
 <div style="font-size:13px;color:var(--muted)">Strzelanka 2D</div>
 <h1 style="margin:6px 0 0 0">Start</h1>
@@ -44,15 +43,11 @@ canvas{display:block;background:#050607;width:760px;height:540px;}
 </div>
 <div style="margin-top:10px;color:var(--muted);font-size:13px">Ruch: WASD lub strzałki, Strzał: Spacja lub klik</div>
 </div>
-
 <div id="shopMenu" class="menu-box" style="display:none;">
 <h1>Sklep</h1>
 <div id="shopItemsPanel"></div>
-<div class="menu-row" style="margin-top:12px;">
-<button class="btn" onclick="backToMenu()">Powrót</button>
+<div class="menu-row" style="margin-top:12px;"><button class="btn" onclick="backToMenu()">Powrót</button></div>
 </div>
-</div>
-
 </div>
 <div class="panel">
 <div class="title">Status</div>
@@ -83,7 +78,6 @@ let owned=storage.get('ownedBullets',{yellow:true});
 let selectedBullet=storage.get('selectedBullet','yellow');
 qcoins=storage.get('qcoins',0);
 
-// Input
 window.addEventListener('keydown',e=>{if(e.code==='KeyW')keys.w=true;if(e.code==='KeyA')keys.a=true;if(e.code==='KeyS')keys.s=true;if(e.code==='KeyD')keys.d=true;if(e.code==='ArrowUp')keys.up=true;if(e.code==='ArrowLeft')keys.left=true;if(e.code==='ArrowDown')keys.down=true;if(e.code==='ArrowRight')keys.right=true;if(e.code==='Space'){keys.space=true;e.preventDefault();}});
 window.addEventListener('keyup',e=>{if(e.code==='KeyW')keys.w=false;if(e.code==='KeyA')keys.a=false;if(e.code==='KeyS')keys.s=false;if(e.code==='KeyD')keys.d=false;if(e.code==='ArrowUp')keys.up=false;if(e.code==='ArrowLeft')keys.left=false;if(e.code==='ArrowDown')keys.down=false;if(e.code==='ArrowRight')keys.right=false;if(e.code==='Space')keys.space=false;});
 canvas.addEventListener('click',()=>keys.space=true);
@@ -91,20 +85,37 @@ canvas.addEventListener('click',()=>keys.space=true);
 function showShop(){document.getElementById('menu').style.display='none';document.getElementById('shopMenu').style.display='flex';renderShop();}
 function backToMenu(){document.getElementById('shopMenu').style.display='none';document.getElementById('menu').style.display='flex';}
 
-// --- Funkcje gry ---
+// --- Pełne funkcje gry ---
+function rand(min,max){return Math.random()*(max-min)+min;}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+function rectColl(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;}
+
 function spawnPlayer(){player={x:canvas.width/2-24,y:canvas.height-90,w:48,h:28,speed:4.2,fireRate:12,fireCooldown:0,shields:0};playerHP=playerMaxHP;updateUI();}
-function spawnWave(n){wave++;document.getElementById('wave').textContent=wave;const toSpawn=Math.min(n,MAX_ENEMIES);for(let i=0;i<toSpawn;i++){enemies.push({x:Math.random()*(canvas.width-60),y:-40-i*40,w:40,h:24,speed:0.6+Math.random(),hp:20,maxhp:20,fireCooldown:Math.floor(Math.random()*120),aim:true});}}
+function spawnWave(n){wave++;document.getElementById('wave').textContent=wave;const toSpawn=Math.min(n,MAX_ENEMIES);for(let i=0;i<toSpawn;i++){enemies.push({x:rand(20,canvas.width-60),y:rand(-260,-40)-i*40,w:40,h:24,speed:0.6+rand(0,0.8),hp:20,maxhp:20,fireCooldown:Math.floor(rand(80,200)),aim:true});}}
+
 function playerShoot(){if(player.fireCooldown>0)return;bullets.push({x:player.x+player.w/2-6,y:player.y-10,w:8,h:14,color:shopData.find(s=>s.id===selectedBullet).color});player.fireCooldown=player.fireRate;}
-function updateUI(){document.getElementById('score').textContent=score;document.getElementById('shieldCount').textContent=shieldCount;document.getElementById('wave').textContent=wave;document.getElementById('hpSmall').textContent=Math.max(0,Math.floor(playerHP));document.getElementById('qcoins').textContent=qcoins;const hpPct=Math.max(0,playerHP/playerMaxHP*100);document.getElementById('hpFill').style.width=hpPct+'%';}
-function loop(){if(!running)return;update();draw();requestAnimationFrame(loop);}
+
+function updateUI(){document.getElementById('score').textContent=score;document.getElementById('shieldCount').textContent=shieldCount;document.getElementById('wave').textContent=wave;document.getElementById('hpSmall').textContent=Math.max(0,Math.floor(playerHP));document.getElementById('qcoins').textContent=qcoins;const hpPct=clamp(playerHP/playerMaxHP*100,0,100);document.getElementById('hpFill').style.width=hpPct+'%';}
+
 function update(){
+// ruch gracza
 if(keys.w||keys.up)player.y-=player.speed;if(keys.s||keys.down)player.y+=player.speed;if(keys.a||keys.left)player.x-=player.speed;if(keys.d||keys.right)player.x+=player.speed;
-player.x=Math.max(0,Math.min(canvas.width-player.w,player.x));player.y=Math.max(0,Math.min(canvas.height-player.h,player.y));
+player.x=clamp(player.x,8,canvas.width-player.w-8);player.y=clamp(player.y,8,canvas.height-player.h-8);
 if(keys.space)playerShoot();if(player.fireCooldown>0)player.fireCooldown--;
-}
-function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#020305';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#00e0a8';ctx.fillRect(player.x,player.y,player.w,player.h);}
+// aktualizacja pocisków
+bullets.forEach((b,i)=>{b.y-=10;if(b.y<-20)bullets.splice(i,1);});
+// spawn kolejnej fali
+if(enemies.length===0){setTimeout(()=>{if(running)spawnWave(3+Math.floor(wave*0.6));},300);}
+updateUI();}
+
+function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#020305';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#00e0a8';ctx.fillRect(player.x,player.y,player.w,player.h);bullets.forEach(b=>{ctx.fillStyle=b.color;ctx.fillRect(b.x,b.y,b.w,b.h);});enemies.forEach(e=>{ctx.fillStyle='#ff5c5c';ctx.fillRect(e.x,e.y,e.w,e.h);});}
+
+function loop(){if(!running)return;update();draw();requestAnimationFrame(loop);}
+
 function startGame(){document.getElementById('menu').style.display='none';running=true;score=0;wave=0;shieldCount=0;playerHP=playerMaxHP;bullets=[];enemyBullets=[];enemies=[];drops=[];explosions=[];qcoins=storage.get('qcoins',qcoins);spawnPlayer();spawnWave(4);updateUI();loop();}
+
 function renderShop(){const shop=document.getElementById('shopItems');shop.innerHTML='';shopData.forEach(item=>{const ownedFlag=!!owned[item.id];const div=document.createElement('div');div.className='shop-item';const left=document.createElement('div');left.innerHTML=`<div style="font-weight:600">${item.label}</div><div style="font-size:12px;color:var(--muted)">Koszt: ${item.cost} Q</div>`;const right=document.createElement('div');const btn=document.createElement('button');btn.className='btn';btn.style.padding='6px 8px';btn.textContent=ownedFlag?(selectedBullet===item.id?'Wybrany':'Wybierz'):`Kup (${item.cost})`;btn.onclick=()=>{if(ownedFlag){selectedBullet=item.id;storage.set('selectedBullet',selectedBullet);renderShop();}else{if(qcoins>=item.cost){qcoins-=item.cost;owned[item.id]=true;selectedBullet=item.id;storage.set('ownedBullets',owned);storage.set('qcoins',qcoins);storage.set('selectedBullet',selectedBullet);renderShop();updateUI();}else{alert('Brak QCoins');}}};const preview=document.createElement('div');preview.style.width='28px';preview.style.height='16px';preview.style.borderRadius='4px';preview.style.background=item.color;preview.style.marginRight='8px';preview.style.boxShadow='inset 0 0 6px rgba(255,255,255,0.06)';right.appendChild(preview);right.appendChild(btn);div.appendChild(left);div.appendChild(right);shop.appendChild(div);});}
+
 </script>
 </body>
 </html>
