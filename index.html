@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Strzelanka z Animacjami</title>
+<title>Strzelanka z Animacjami i Dźwiękiem</title>
 <style>
     body {
         margin: 0;
@@ -47,6 +47,11 @@ enemySprite.src = 'https://i.imgur.com/7UuMZft.png'; // sprite sheet wroga
 const bulletImg = new Image();
 bulletImg.src = 'https://i.imgur.com/htQ5X0c.png'; // pocisk
 
+// --- Dźwięki ---
+const shootSound = new Audio('https://freesound.org/data/previews/66/66717_931655-lq.mp3'); // strzał
+const hitSound = new Audio('https://freesound.org/data/previews/256/256113_4486188-lq.mp3'); // trafienie wroga
+const damageSound = new Audio('https://freesound.org/data/previews/331/331912_3248244-lq.mp3'); // uderzenie gracza
+
 // --- Gracz ---
 const player = {
     x: canvas.width/2 - 25,
@@ -56,7 +61,7 @@ const player = {
     speed: 7,
     lives: 3,
     frameX: 0,
-    maxFrame: 3, // liczba klatek w sprite sheet
+    maxFrame: 3,
     frameTimer: 0,
     frameInterval: 10
 };
@@ -84,6 +89,8 @@ document.addEventListener('keydown', e => {
 // --- Funkcje ---
 function shoot() {
     bullets.push({x: player.x + player.width/2 - 5, y: player.y, width: 10, height: 20});
+    shootSound.currentTime = 0;
+    shootSound.play();
 }
 
 function spawnEnemy() {
@@ -138,6 +145,8 @@ function update() {
                    enemies.splice(i,1);
                    score += 10;
                    document.getElementById('score').innerText = score;
+                   hitSound.currentTime = 0;
+                   hitSound.play();
                    break;
             }
         }
@@ -151,6 +160,8 @@ function update() {
                enemies.splice(i,1);
                player.lives--;
                document.getElementById('lives').innerText = player.lives;
+               damageSound.currentTime = 0;
+               damageSound.play();
                if(player.lives <= 0){
                    alert("Koniec gry! Punkty: " + score);
                    window.location.reload();
