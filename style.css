@@ -8,12 +8,10 @@ body {
 canvas {
   display: block;
   margin: 0 auto;
-  border: 3px solid #fff;
-  background-color: #000;
+  border: 2px solid #fff;
+  background-color: #222;
 }
 
 h1 {
   margin-bottom: 10px;
-  color: #0f0;
-  text-shadow: 2px 2px #0a0;
 }
