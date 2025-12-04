@@ -1,21 +1,15 @@
 body {
-  text-align: center;
-  font-family: Arial, sans-serif;
-  background-color: #111;
-  color: #fff;
-  margin: 0;
-  padding: 0;
+    background: #111;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
 }
 
 canvas {
-  display: block;
-  margin: 0 auto;
-  background-color: #000;
+    border: 3px solid #fff;
+    background: black;
 }
 
-h1 {
-  margin: 10px 0;
-  color: #0f0;
-  text-shadow: 2px 2px #0a0;
-}
 
