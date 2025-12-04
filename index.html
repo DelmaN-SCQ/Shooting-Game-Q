@@ -38,9 +38,7 @@ canvas{display:block;background:#050607;width:760px;height:540px;}
 <div style="font-size:13px;color:var(--muted)">Strzelanka 2D</div>
 <h1 style="margin:6px 0 0 0">Start</h1>
 <div class="menu-row">
-<button class="btn" onclick="startGame(1)">Łatwy</button>
-<button class="btn" onclick="startGame(2)">Średni</button>
-<button class="btn" onclick="startGame(3)">Trudny</button>
+<button class="btn" onclick="startGame()">Graj</button>
 </div>
 <div style="margin-top:10px;color:var(--muted);font-size:13px">Ruch: WASD lub strzałki, Strzał: Spacja lub klik</div>
 </div>
@@ -64,7 +62,7 @@ canvas{display:block;background:#050607;width:760px;height:540px;}
 <script>
 const canvas=document.getElementById('gameCanvas');
 const ctx=canvas.getContext('2d');
-let running=false,difficulty=1,score=0,wave=0,shieldCount=0,playerMaxHP=100,playerHP=100,qcoins=0;
+let running=false,score=0,wave=0,shieldCount=0,playerMaxHP=100,playerHP=100,qcoins=0;
 const keys={w:false,a:false,s:false,d:false,up:false,down:false,left:false,right:false,space:false};
 let player,bullets=[],enemyBullets=[],enemies=[],drops=[],explosions=[];
 const MAX_ENEMIES=12;
@@ -79,8 +77,8 @@ window.addEventListener('keydown',e=>{if(e.code==='KeyW')keys.w=true;if(e.code==
 window.addEventListener('keyup',e=>{if(e.code==='KeyW')keys.w=false;if(e.code==='KeyA')keys.a=false;if(e.code==='KeyS')keys.s=false;if(e.code==='KeyD')keys.d=false;if(e.code==='ArrowUp')keys.up=false;if(e.code==='ArrowLeft')keys.left=false;if(e.code==='ArrowDown')keys.down=false;if(e.code==='ArrowRight')keys.right=false;if(e.code==='Space')keys.space=false;});
 canvas.addEventListener('click',()=>keys.space=true);
 
-// Pełne funkcje gry: spawnWave, playerShoot, enemyShoot, update, draw, loop, startGame, showGameOver, renderShop
-// Zawierają ograniczenie wrogów do MAX_ENEMIES, QCoins, sklep, pętlę gry i menu startowe
+// Tutaj wstaw pełne funkcje gry (spawnWave, playerShoot, enemyShoot, update, draw, loop, startGame, showGameOver, renderShop)
+// Bez wyboru trybu — startGame() uruchamia grę od razu z ustawioną trudnością domyślną.
 
 window.startGame=startGame;
 </script>
