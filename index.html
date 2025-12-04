@@ -3,242 +3,163 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Strzelanka Arcade</title>
+<title>Strzelanka Arcade Bez Sprite</title>
 <style>
-    body {
-        margin: 0;
-        background: #111;
-        overflow: hidden;
-        font-family: Arial, sans-serif;
-    }
-    canvas {
-        display: block;
-        margin: auto;
-        background: #000;
-    }
-    #ui {
-        position: absolute;
-        top: 10px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 300px;
-        text-align: center;
-        color: white;
-    }
-    #score { font-size: 24px; font-weight: bold; }
-    #level { font-size: 18px; margin-top: 5px; }
-    #health-bar-container {
-        width: 100%;
-        height: 20px;
-        background: #555;
-        border-radius: 10px;
-        margin-top: 10px;
-        overflow: hidden;
-    }
-    #health-bar {
-        height: 100%;
-        background: limegreen;
-        width: 100%;
-        transition: width 0.2s;
-    }
+body { margin:0; background:#111; overflow:hidden; font-family:Arial, sans-serif; }
+canvas { display:block; margin:auto; background:#000; }
+#ui { position:absolute; top:10px; left:50%; transform:translateX(-50%); width:300px; text-align:center; color:white; }
+#score { font-size:24px; font-weight:bold; }
+#level { font-size:18px; margin-top:5px; }
+#health-bar-container { width:100%; height:20px; background:#555; border-radius:10px; margin-top:10px; overflow:hidden; }
+#health-bar { height:100%; background:limegreen; width:100%; transition:width 0.2s; }
 </style>
 </head>
 <body>
 <div id="ui">
     <div>Punkty: <span id="score">0</span></div>
     <div id="level">Poziom: <span id="current-level">1</span></div>
-    <div id="health-bar-container">
-        <div id="health-bar"></div>
-    </div>
+    <div id="health-bar-container"><div id="health-bar"></div></div>
 </div>
 <canvas id="gameCanvas"></canvas>
 
 <script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-// --- Sprity PNG ---
-const playerSprite = new Image();
-playerSprite.src = 'https://i.imgur.com/3W6Yf6P.png'; // sprite gracza
-
-const enemySprites = [
-    'https://i.imgur.com/7UuMZft.png', // typ 1
-    'https://i.imgur.com/2p4l4iK.png', // typ 2
-];
-
-const bulletImg = new Image();
-bulletImg.src = 'https://i.imgur.com/htQ5X0c.png'; // pocisk
-
-// --- Dźwięki ---
-const shootSound = new Audio('https://freesound.org/data/previews/66/66717_931655-lq.mp3');
-const hitSound = new Audio('https://freesound.org/data/previews/256/256113_4486188-lq.mp3');
-const damageSound = new Audio('https://freesound.org/data/previews/331/331912_3248244-lq.mp3');
+const canvas=document.getElementById('gameCanvas');
+const ctx=canvas.getContext('2d');
+canvas.width=window.innerWidth; canvas.height=window.innerHeight;
 
 // --- Gracz ---
-const player = {
-    x: canvas.width/2 - 25,
-    y: canvas.height - 80,
-    width: 50,
-    height: 50,
-    speed: 7,
-    lives: 3,
-    maxLives: 3,
-    frameX: 0,
-    maxFrame: 3,
-    frameTimer: 0,
-    frameInterval: 10
-};
+const player = {x:canvas.width/2-25, y:canvas.height-80, width:50, height:50, speed:7, lives:3, maxLives:3};
 
 // --- Pociski ---
-const bullets = [];
-const bulletSpeed = 12;
+const bullets=[]; const bulletSpeed=12;
 
 // --- Wrogowie ---
-const enemies = [];
-let enemySpeed = 2;
-let spawnInterval = 1000;
+const enemies=[]; let enemySpeed=2; let spawnInterval=1000;
+
+// --- Power-upy ---
+const powerUps=[]; 
 
 // --- Poziomy i punkty ---
-let score = 0;
-let level = 1;
-let levelTimer = 0;
+let score=0; let level=1; let levelTimer=0;
+
+// --- Gwiazdy tła ---
+const stars=[]; for(let i=0;i<150;i++){stars.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*2+1,speed:Math.random()*1+0.5});}
+
+// --- Cząsteczki ---
+const particles=[]; 
+function createParticle(x,y,color){particles.push({x,y,r:Math.random()*3+2,dx:(Math.random()-0.5)*4,dy:(Math.random()-0.5)*4,life:30,color});}
 
 // --- Sterowanie ---
-const keys = {};
-document.addEventListener('keydown', e => keys[e.key] = true);
-document.addEventListener('keyup', e => keys[e.key] = false);
-document.addEventListener('keydown', e => { if(e.key===' ') shoot(); });
+const keys={};
+document.addEventListener('keydown',e=>keys[e.key]=true);
+document.addEventListener('keyup',e=>keys[e.key]=false);
+document.addEventListener('keydown',e=>{if(e.key===' ') shoot();});
 
 // --- Funkcje ---
-function shoot() {
-    bullets.push({x: player.x + player.width/2 - 5, y: player.y, width: 10, height: 20});
-    shootSound.currentTime = 0;
-    shootSound.play();
+function shoot(){
+    bullets.push({x:player.x+player.width/2-5,y:player.y,width:10,height:20});
+    for(let i=0;i<5;i++) createParticle(player.x+player.width/2,player.y,'yellow');
 }
 
-function spawnEnemy() {
-    const type = Math.floor(Math.random() * enemySprites.length);
-    const sprite = new Image();
-    sprite.src = enemySprites[type];
-
-    const size = 50 + Math.random()*30; // różne rozmiary wrogów
-    const x = Math.random() * (canvas.width - size);
-    enemies.push({
-        x, y: -size, width: size, height: size,
-        frameX: 0, maxFrame: 3, frameTimer: 0, frameInterval: 15,
-        sprite
-    });
+function spawnEnemy(){
+    const size=30+Math.random()*40;
+    const x=Math.random()*(canvas.width-size);
+    const color = ['red','orange','purple'][Math.floor(Math.random()*3)];
+    enemies.push({x,y:-size,width:size,height:size,color});
 }
 
-setInterval(spawnEnemy, spawnInterval);
+function spawnPowerUp(){
+    const size=20;
+    const x=Math.random()*(canvas.width-size);
+    const type = Math.random()<0.5 ? 'life':'score';
+    const color = type==='life'?'lime':'cyan';
+    powerUps.push({x,y:-size,size,type,color});
+}
 
-function update() {
+setInterval(spawnEnemy,spawnInterval);
+setInterval(spawnPowerUp,10000);
+
+// --- Update ---
+function update(){
     // Poziom i trudność
-    levelTimer++;
-    if(levelTimer > 600){ // co 10s
-        level++;
-        enemySpeed += 0.5;
-        spawnInterval = Math.max(300, spawnInterval - 50);
-        document.getElementById('current-level').innerText = level;
-        levelTimer = 0;
+    levelTimer++; 
+    if(levelTimer>600){
+        level++; enemySpeed+=0.5; spawnInterval=Math.max(300,spawnInterval-50); 
+        document.getElementById('current-level').innerText=level; levelTimer=0;
     }
 
     // Ruch gracza
-    if(keys['ArrowLeft'] && player.x>0) player.x -= player.speed;
-    if(keys['ArrowRight'] && player.x+player.width<canvas.width) player.x += player.speed;
-    if(keys['ArrowUp'] && player.y>0) player.y -= player.speed;
-    if(keys['ArrowDown'] && player.y+player.height<canvas.height) player.y += player.speed;
-
-    // Animacja gracza
-    player.frameTimer++;
-    if(player.frameTimer>=player.frameInterval){
-        player.frameTimer=0;
-        player.frameX++;
-        if(player.frameX>player.maxFrame) player.frameX=0;
-    }
+    if(keys['ArrowLeft']&&player.x>0)player.x-=player.speed;
+    if(keys['ArrowRight']&&player.x+player.width<canvas.width)player.x+=player.speed;
+    if(keys['ArrowUp']&&player.y>0)player.y-=player.speed;
+    if(keys['ArrowDown']&&player.y+player.height<canvas.height)player.y+=player.speed;
 
     // Pociski
-    for(let i=bullets.length-1;i>=0;i--){
-        bullets[i].y -= bulletSpeed;
-        if(bullets[i].y+bullets[i].height<0) bullets.splice(i,1);
-    }
+    for(let i=bullets.length-1;i>=0;i--){bullets[i].y-=bulletSpeed; if(bullets[i].y+bullets[i].height<0) bullets.splice(i,1);}
 
     // Wrogowie
     for(let i=enemies.length-1;i>=0;i--){
-        let e = enemies[i];
-        e.y += enemySpeed;
-
-        // Animacja wroga
-        e.frameTimer++;
-        if(e.frameTimer>=e.frameInterval){
-            e.frameTimer=0;
-            e.frameX++;
-            if(e.frameX>e.maxFrame) e.frameX=0;
-        }
-
+        let e=enemies[i]; e.y+=enemySpeed;
         // Kolizja z pociskami
         for(let j=bullets.length-1;j>=0;j--){
-            if(bullets[j].x < e.x+e.width &&
-               bullets[j].x+bullets[j].width > e.x &&
-               bullets[j].y < e.y+e.height &&
-               bullets[j].y+bullets[j].height > e.y){
-                   bullets.splice(j,1);
-                   enemies.splice(i,1);
-                   score+=10;
-                   document.getElementById('score').innerText = score;
-                   hitSound.currentTime=0; hitSound.play();
-                   break;
+            if(bullets[j].x<e.x+e.width && bullets[j].x+bullets[j].width>e.x && bullets[j].y<e.y+e.height && bullets[j].y+bullets[j].height>e.y){
+                bullets.splice(j,1); enemies.splice(i,1); score+=10; document.getElementById('score').innerText=score;
+                for(let k=0;k<10;k++) createParticle(e.x+e.width/2,e.y+e.height/2,'orange');
+                break;
             }
         }
-
         // Kolizja z graczem
-        if(e &&
-           player.x<e.x+e.width &&
-           player.x+player.width>e.x &&
-           player.y<e.y+e.height &&
-           player.y+player.height>e.y){
-               enemies.splice(i,1);
-               player.lives--;
-               document.getElementById('health-bar').style.width=(player.lives/player.maxLives*100)+'%';
-               damageSound.currentTime=0; damageSound.play();
-
-               // Efekt uderzenia
-               ctx.fillStyle='rgba(255,0,0,0.3)';
-               ctx.fillRect(0,0,canvas.width,canvas.height);
-
-               if(player.lives<=0){
-                   alert("Koniec gry! Punkty: "+score);
-                   window.location.reload();
-               }
+        if(player.x<e.x+e.width && player.x+player.width>e.x && player.y<e.y+e.height && player.y+player.height>e.y){
+            enemies.splice(i,1); player.lives--; document.getElementById('health-bar').style.width=(player.lives/player.maxLives*100)+'%';
+            for(let k=0;k<15;k++) createParticle(player.x+player.width/2,player.y+player.height/2,'red');
+            if(player.lives<=0){alert("Koniec gry! Punkty: "+score); window.location.reload();}
         }
-
-        if(e && e.y>canvas.height) enemies.splice(i,1);
+        if(e.y>canvas.height) enemies.splice(i,1);
     }
+
+    // Power-upy
+    for(let i=powerUps.length-1;i>=0;i--){
+        let p=powerUps[i]; p.y+=2;
+        if(player.x<p.x+p.size && player.x+player.width>p.x && player.y<p.y+p.size && player.y+player.height>p.y){
+            if(p.type==='life' && player.lives<player.maxLives) player.lives++;
+            if(p.type==='score') score+=50;
+            powerUps.splice(i,1); document.getElementById('score').innerText=score;
+        }
+        if(p.y>canvas.height) powerUps.splice(i,1);
+    }
+
+    // Cząsteczki
+    for(let i=particles.length-1;i>=0;i--){let p=particles[i]; p.x+=p.dx; p.y+=p.dy; p.life--; if(p.life<=0) particles.splice(i,1);}
+
+    // Tło gwiazdy
+    for(let s of stars){s.y+=s.speed; if(s.y>canvas.height)s.y=0;}
 }
 
-function draw() {
+// --- Draw ---
+function draw(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
+    // Tło gwiazdy
+    ctx.fillStyle='white'; for(let s of stars){ctx.beginPath(); ctx.arc(s.x,s.y,s.r,0,Math.PI*2); ctx.fill();}
+
     // Gracz
-    ctx.drawImage(playerSprite, player.frameX*player.width,0,player.width,player.height,
-                  player.x,player.y,player.width,player.height);
+    ctx.fillStyle='blue'; ctx.fillRect(player.x,player.y,player.width,player.height);
 
     // Pociski
-    bullets.forEach(b=>ctx.drawImage(bulletImg,b.x,b.y,b.width,b.height));
+    ctx.fillStyle='yellow'; for(let b of bullets) ctx.fillRect(b.x,b.y,b.width,b.height);
 
     // Wrogowie
-    enemies.forEach(e=>ctx.drawImage(e.sprite,e.frameX*e.width,0,e.width,e.height,
-                                     e.x,e.y,e.width,e.height));
+    for(let e of enemies){ctx.fillStyle=e.color; ctx.fillRect(e.x,e.y,e.width,e.height);}
+
+    // Power-upy
+    for(let p of powerUps){ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x+p.size/2,p.y+p.size/2,p.size/2,0,Math.PI*2); ctx.fill();}
+
+    // Cząsteczki
+    for(let p of particles){ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();}
 }
 
-function gameLoop(){
-    update();
-    draw();
-    requestAnimationFrame(gameLoop);
-}
-
+// --- Game Loop ---
+function gameLoop(){update(); draw(); requestAnimationFrame(gameLoop);}
 gameLoop();
 </script>
 </body>
