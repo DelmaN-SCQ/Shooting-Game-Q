@@ -58,7 +58,7 @@ const keys={w:false,a:false,s:false,d:false,up:false,down:false,left:false,right
 let player,bullets=[],enemies=[];
 const MAX_ENEMIES=8;
 
-// Load sprites
+// Sprites
 const playerImg=new Image();
 playerImg.src='player.png';
 const enemyImg=new Image();
@@ -72,7 +72,7 @@ function rand(min,max){return Math.random()*(max-min)+min;}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 
 function spawnPlayer(){player={x:canvas.width/2-24,y:canvas.height-90,w:48,h:48,speed:4.2,fireRate:12,fireCooldown:0,shields:0};playerHP=playerMaxHP;updateUI();}
-function spawnWave(n){wave++;document.getElementById('wave').textContent=wave;const toSpawn=Math.min(n,MAX_ENEMIES);for(let i=0;i<toSpawn;i++){enemies.push({x:rand(20,canvas.width-60),y:rand(-260,-40)-i*60,w:48,h:48,speed:1+rand(0,1),hp:20,maxhp:20});}}
+function spawnWave(n){wave++;document.getElementById('wave').textContent=wave;const toSpawn=Math.min(n,MAX_ENEMIES);for(let i=0;i<toSpawn;i++){enemies.push({x:rand(20,canvas.width-60),y:rand(-260,-40)-i*60,w:48,h:48,speed:1+rand(0,1),hp:20,maxhp:20,fireCooldown:Math.floor(rand(60,180))});}}
 
 function playerShoot(){if(player.fireCooldown>0)return;bullets.push({x:player.x+player.w/2-6,y:player.y-10,w:8,h:14,color:'#ffe18b'});player.fireCooldown=player.fireRate;}
 
@@ -87,8 +87,22 @@ function update(){
   player.y=clamp(player.y,8,canvas.height-player.h-8);
   if(keys.space)playerShoot();
   if(player.fireCooldown>0)player.fireCooldown--;
+
+  // Bullets update
   bullets.forEach((b,i)=>{b.y-=10;if(b.y<-20)bullets.splice(i,1);});
+
+  // Enemies update
+  enemies.forEach(e=>{
+    e.y+=e.speed;
+    e.fireCooldown--;
+    if(e.fireCooldown<=0){
+      bullets.push({x:e.x+e.w/2-6,y:e.y+e.h,w:8,h:14,color:'#ff8c8c'});
+      e.fireCooldown=Math.floor(rand(60,180));
+    }
+  });
+
   if(enemies.length===0){setTimeout(()=>{if(running)spawnWave(3+Math.floor(wave*0.6));},300);}
+
   updateUI();
 }
 
@@ -96,11 +110,14 @@ function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.fillStyle='#020305';
   ctx.fillRect(0,0,canvas.width,canvas.height);
+
   // Draw player
   if(playerImg.complete) ctx.drawImage(playerImg,player.x,player.y,player.w,player.h);
   else ctx.fillStyle='#00e0a8'; ctx.fillRect(player.x,player.y,player.w,player.h);
+
   // Draw bullets
   bullets.forEach(b=>{ctx.fillStyle=b.color;ctx.fillRect(b.x,b.y,b.w,b.h);});
+
   // Draw enemies
   enemies.forEach(e=>{if(enemyImg.complete) ctx.drawImage(enemyImg,e.x,e.y,e.w,e.h); else {ctx.fillStyle='#ff5c5c'; ctx.fillRect(e.x,e.y,e.w,e.h);}});
 }
