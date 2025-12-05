@@ -3,22 +3,50 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Futuristic Shooter Game Q</title>
+<title>Futuristic Shooter</title>
 <style>
-body{margin:0;background:#0a0a0a;overflow:hidden;font-family:Arial;}
-canvas{display:block;}
-#menu,#gameover{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:white;}
-button{padding:12px 24px;font-size:18px;margin-top:10px;border:none;border-radius:8px;background:#111;color:white;cursor:pointer;transition:0.3s;}
-button:hover{background:#333;box-shadow:0 0 10px #0ff;}
-#menu h1,#gameover h1{color:#0ff;text-shadow:0 0 10px #0ff;}
+body {
+    margin:0;
+    overflow:hidden;
+    font-family: 'Arial', sans-serif;
+    background: radial-gradient(circle at center, #0a0a1a, #00001a);
+    color:white;
+}
+canvas {display:block;}
+#menu, #gameover {
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    text-align:center;
+}
+button {
+    padding:15px 30px;
+    font-size:20px;
+    margin-top:15px;
+    border:none;
+    border-radius:10px;
+    background:linear-gradient(90deg,#0ff,#08f);
+    color:white;
+    cursor:pointer;
+    transition:0.3s;
+    box-shadow:0 0 15px #0ff;
+}
+button:hover {
+    box-shadow:0 0 30px #0ff;
+}
+#menu h1, #gameover h1 {
+    font-size:48px;
+    text-shadow: 0 0 15px #0ff;
+}
 </style>
 </head>
 <body>
 
 <div id="menu">
-<h1>Futuristic Shooter Game Q</h1>
-<p>Ruch: Strzałki | Strzał: SPACJA</p>
-<button id="startBtn">Start</button>
+<h1>FUTURISTIC SHOOTER</h1>
+<p>Strzał: SPACJA | Ruch: Strzałki</p>
+<button id="startBtn">Zagraj</button>
 </div>
 
 <div id="gameover" style="display:none;">
@@ -36,22 +64,34 @@ canvas.width=window.innerWidth;
 canvas.height=window.innerHeight;
 
 // --- Game variables ---
-let gameStarted=false, gameOver=false;
+let gameStarted=false, gameOver=false, paused=false;
+
 const player={x:canvas.width/2,y:canvas.height-80,width:30,height:50,speed:7,lives:100,maxLives:100,shield:false};
 const bullets=[], bulletSpeed=15;
 const enemies=[], maxEnemies=10, enemySpeed=2;
 const powerUps=[], maxPowerUps=2;
-let score=0, level=1, kills=0, xp=0, xpGoal=100, shieldTimer=0;
+
+let score=0, kills=0, shieldTimer=0;
+
+// --- Persistent variables ---
+let level=parseInt(localStorage.getItem('level'))||1;
+let xp=parseInt(localStorage.getItem('xp'))||0;
+let xpGoal=parseInt(localStorage.getItem('xpGoal'))||100;
+let highScore=parseInt(localStorage.getItem('highScore'))||0;
 
 // --- Controls ---
 const keys={};
-document.addEventListener('keydown',e=>{keys[e.key]=true;if(gameStarted&&e.key===' ') shoot();});
+document.addEventListener('keydown',e=>{
+    keys[e.key]=true;
+    if(gameStarted && e.key===' ') shoot();
+    if(e.key==='p' || e.key==='P') paused=!paused;
+});
 document.addEventListener('keyup',e=>keys[e.key]=false);
 
 // --- Menu buttons ---
-document.getElementById('startBtn').onclick=()=>{gameStarted=true;gameOver=false;document.getElementById('menu').style.display='none';resetGame();};
-document.getElementById('restartBtn').onclick=()=>{gameOver=false;gameStarted=true;document.getElementById('gameover').style.display='none';resetGame(false);};
-document.getElementById('menuBtn').onclick=()=>{gameOver=false;gameStarted=false;document.getElementById('gameover').style.display='none';document.getElementById('menu').style.display='block';};
+document.getElementById('startBtn').onclick=()=>{gameStarted=true;gameOver=false;document.getElementById('menu').style.display='none'; resetGame(false);};
+document.getElementById('restartBtn').onclick=()=>{gameOver=false;gameStarted=true;document.getElementById('gameover').style.display='none'; resetGame(false);};
+document.getElementById('menuBtn').onclick=()=>{gameOver=false;gameStarted=false;document.getElementById('gameover').style.display='none'; document.getElementById('menu').style.display='block';};
 
 // --- Sounds ---
 const shootSound=new Audio('https://freesound.org/data/previews/66/66717_931655-lq.mp3');
@@ -60,11 +100,13 @@ const pickupSound=new Audio('https://freesound.org/data/previews/331/331912_3248
 const damageSound=new Audio('https://freesound.org/data/previews/331/331912_3248244-lq.mp3');
 
 // --- Reset Game ---
-function resetGame(resetXP=true){
+function resetGame(resetPersistent=false){
     player.x=canvas.width/2; player.y=canvas.height-80; player.lives=100; player.shield=false;
     bullets.length=0; enemies.length=0; powerUps.length=0;
     score=0; kills=0; shieldTimer=0;
-    if(resetXP){level=1; xp=0; xpGoal=100;}
+    if(resetPersistent){
+        level=1; xp=0; xpGoal=100;
+    }
 }
 
 // --- Shoot ---
@@ -90,7 +132,7 @@ function spawnPowerUp(){
 
 // --- Game update ---
 function update(){
-    if(!gameStarted||gameOver) return;
+    if(!gameStarted||gameOver||paused) return;
 
     // Player movement
     if(keys['ArrowLeft'] && player.x-player.width/2>0) player.x-=player.speed;
@@ -143,22 +185,40 @@ function update(){
 
     // Level up
     if(xp>=xpGoal){level++; xp-=xpGoal; xpGoal=Math.floor(xpGoal*1.5);}
+
+    // Save persistent variables
+    localStorage.setItem('level',level);
+    localStorage.setItem('xp',xp);
+    localStorage.setItem('xpGoal',xpGoal);
+    if(score>highScore){highScore=score; localStorage.setItem('highScore',highScore);}
 }
 
 // --- Draw ---
 function draw(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
 
+    // Background glow stars
+    for(let i=0;i<50;i++){
+        ctx.fillStyle='rgba(255,255,255,'+Math.random()*0.3+')';
+        ctx.fillRect(Math.random()*canvas.width,Math.random()*canvas.height,2,2);
+    }
+
+    if(paused){
+        ctx.font='72px Arial';
+        ctx.fillStyle='white';
+        ctx.textAlign='center';
+        ctx.fillText('PAUZA',canvas.width/2,canvas.height/2);
+        return;
+    }
+
     // HUD
-    ctx.font='22px Arial'; ctx.textAlign='left';
+    ctx.font='22px Arial'; ctx.textAlign='right';
+    ctx.fillStyle='cyan';
+    ctx.fillText(`Punkty: ${score}`,canvas.width-20,30);
+    ctx.fillText(`Poziom: ${level}`,canvas.width-20,60);
+    ctx.fillText(`High Score: ${highScore}`,canvas.width-20,90);
 
-    // Score
-    ctx.fillStyle='cyan'; ctx.fillText(`Punkty: ${score}`,canvas.width-200,30);
-
-    // Level
-    ctx.fillStyle='magenta'; ctx.fillText(`Poziom: ${level}`,canvas.width-200,60);
-
-    // HP Bar (futurystyczny)
+    // HP Bar
     const barWidth=250;
     ctx.fillStyle='#222'; ctx.fillRect(20,canvas.height-50,barWidth,25);
     const hpGradient=ctx.createLinearGradient(20,canvas.height-50,20+barWidth,canvas.height-25);
@@ -192,8 +252,8 @@ function draw(){
 }
 
 // --- Spawn intervals ---
-setInterval(()=>{if(gameStarted&&!gameOver) spawnEnemy();},1200);
-setInterval(()=>{if(gameStarted&&!gameOver) spawnPowerUp();},15000);
+setInterval(()=>{if(gameStarted&&!gameOver&&!paused) spawnEnemy();},1200);
+setInterval(()=>{if(gameStarted&&!gameOver&&!paused) spawnPowerUp();},15000);
 
 // --- Game loop ---
 function gameLoop(){update();draw();requestAnimationFrame(gameLoop);}
