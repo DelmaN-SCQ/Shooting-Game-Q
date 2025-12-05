@@ -1,120 +1,184 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Futuristic Shooter — Double Shot</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Futuristic Shooter — Pro</title>
 <style>
-body, html {margin:0; padding:0; overflow:hidden; background:#071025; color:#fff; font-family:sans-serif;}
-canvas {display:block;}
-#hud {position:absolute; top:10px; right:10px;}
-.powerup {position:absolute; bottom:50px; left:10px; font-size:14px; color:#1de9b6;}
+:root{
+  --bg1:#071025; --bg2:#000814; --accent:#1de9b6; --accent2:#66fcf1; --muted:#9aa5b1;
+}
+html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg1),var(--bg2));font-family:Inter,Arial,sans-serif;color:#e6f7ff;}
+canvas{display:block;width:100vw;height:100vh;}
+.overlay{position:fixed;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+.card{pointer-events:auto;background:linear-gradient(180deg,rgba(7,16,37,0.85),rgba(0,8,20,0.9));border-radius:14px;padding:22px;border:1px solid rgba(110,230,190,0.12);box-shadow:0 10px 30px rgba(0,0,0,0.6);min-width:320px;max-width:720px;}
+.title{font-size:36px;text-align:center;margin:0 0 6px 0;color:var(--accent);letter-spacing:1px;text-shadow:0 6px 18px rgba(34,202,163,0.08);}
+.subtitle{color:var(--muted);text-align:center;margin:6px 0 14px 0;}
+.btn{display:inline-block;padding:12px 20px;border-radius:10px;background:linear-gradient(90deg,var(--accent),var(--accent2));border:none;color:#021019;font-weight:700;cursor:pointer;font-size:16px;margin:6px;}
+.btn.small{padding:8px 12px;font-size:13px;border-radius:8px;}
+.row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+#hudCluster{position:fixed;right:18px;top:18px;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:auto}
+.hudBox{background:rgba(10,18,30,0.45);padding:8px 12px;border-radius:10px;border:1px solid rgba(160,255,230,0.06);backdrop-filter:blur(6px);min-width:170px}
+.hudTitle{font-size:13px;color:var(--muted);margin:0}
+.hudValue{font-size:18px;color:#eafff7;margin:0;font-weight:600}
+#settingsToggle{position:fixed;left:18px;top:18px;padding:8px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);color:var(--accent);cursor:pointer;z-index:50}
+#pauseOverlay{position:fixed;left:0;top:0;right:0;bottom:0;display:none;align-items:center;justify-content:center;background:rgba(1,4,10,0.6);backdrop-filter:blur(4px);z-index:40}
+.pauseBox{border-radius:12px;padding:18px 26px;background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.02));text-align:center;border:1px solid rgba(255,255,255,0.04)}
+.pauseTitle{font-size:42px;color:var(--accent);margin:0 0 6px 0}
+#settingsPanel{position:fixed;left:18px;top:60px;width:320px;max-width:calc(100vw - 40px);z-index:60;display:none}
+.settingRow{display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.005));margin-bottom:8px;border:1px solid rgba(255,255,255,0.02)}
+.muted{color:var(--muted);font-size:13px}
+footer{position:fixed;left:0;right:0;bottom:8px;text-align:center;color:rgba(230,247,255,0.06);font-size:12px}
+@media (max-width:520px){.card{min-width:260px;padding:16px}.title{font-size:28px}}
 </style>
 </head>
 <body>
-<canvas id="c"></canvas>
-<div id="hud">Score: <span id="score">0</span></div>
-<div class="powerup" id="powerupInfo">Power-up: brak</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<!-- HUD -->
+<div id="hudCluster" aria-hidden="true">
+  <div class="hudBox"><p class="hudTitle">Punkty</p><p id="hudScore" class="hudValue">0</p></div>
+  <div class="hudBox"><p class="hudTitle">Poziom</p><p id="hudLevel" class="hudValue">1</p></div>
+  <div class="hudBox"><p class="hudTitle">High Score</p><p id="hudHS" class="hudValue">0</p></div>
+  <div class="hudBox"><p class="hudTitle">Power-Up</p><p id="hudPower" class="hudValue">Brak</p></div>
+</div>
+
+<!-- Settings -->
+<button id="settingsToggle" title="Ustawienia (kliknij)">⚙</button>
+<div id="settingsPanel" class="card">
+  <h3 style="margin:0 0 8px 0;color:var(--accent)">Ustawienia</h3>
+  <div class="settingRow"><div><div style="font-weight:700">Dźwięk</div><div class="muted">Włącz/Wyłącz efekty</div></div>
+    <div><input type="checkbox" id="soundToggle" checked /></div></div>
+  <div class="settingRow"><div><div style="font-weight:700">Głośność</div><div class="muted">Reguluje level efektów</div></div>
+    <div><input id="vol" type="range" min="0" max="1" step="0.01" value="0.9" /></div></div>
+  <div class="settingRow"><div><div style="font-weight:700">Trudność</div><div class="muted">Wybierz tryb</div></div>
+    <div><select id="difficulty"><option value="easy">Easy</option><option value="normal" selected>Normal</option><option value="hard">Hard</option></select></div></div>
+  <div class="settingRow"><div><div style="font-weight:700">Zachowaj progres</div><div class="muted">Poziom/XP będą zapisane</div></div>
+    <div><button id="resetProgress" class="btn small" style="background:#ff6b6b;color:white">Resetuj</button></div></div>
+  <div style="margin-top:8px;text-align:center">
+    <button id="closeSettings" class="btn small" style="background:linear-gradient(90deg,#66fcf1,#1de9b6)">Zamknij</button>
+  </div>
+</div>
+
+<!-- Menu -->
+<div id="menu" class="overlay">
+  <div class="card">
+    <h2 class="title">FUTURISTIC SHOOTER</h2>
+    <p class="subtitle">Pełnoekranowa strzelanka — pauza: <strong>P</strong> | ustawienia: ⚙</p>
+    <div class="row"><button id="playBtn" class="btn">Zagraj</button><button id="playDemo" class="btn small">Szybki start</button></div>
+    <p style="color:var(--muted);margin-top:12px;font-size:13px">Poruszaj się strzałkami, strzelaj SPACJĄ. Poziomy i XP zapisują się po odświeżeniu.</p>
+  </div>
+</div>
+
+<!-- Pause -->
+<div id="pauseOverlay">
+  <div class="pauseBox">
+    <div class="pauseTitle">PAUZA</div>
+    <div style="margin-top:8px;color:var(--muted)">Naciśnij <strong>P</strong> aby wznowić</div>
+    <div style="margin-top:12px" class="row"><button id="resumeBtn" class="btn small">Wznów</button><button id="pauseMenuBtn" class="btn small">Menu</button></div>
+  </div>
+</div>
+
+<!-- Gameover -->
+<div id="gameover" class="overlay" style="display:none">
+  <div class="card">
+    <h2 class="title">Koniec gry</h2>
+    <p class="subtitle">Twój wynik: <span id="finalScore">0</span></p>
+    <div class="row"><button id="restartBtnMain" class="btn">Restart</button><button id="menuBtnMain" class="btn small">Menu</button></div>
+  </div>
+</div>
+
+<footer>© Futuristic Shooter — demo</footer>
+
 <script>
-const canvas=document.getElementById('c');
-const ctx=canvas.getContext('2d');
-canvas.width=window.innerWidth; canvas.height=window.innerHeight;
+// --- Canvas setup
+const canvas=document.getElementById('gameCanvas'); const ctx=canvas.getContext('2d');
+function resize(){ canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
+window.addEventListener('resize',resize); resize();
 
-let player={x:canvas.width/2, y:canvas.height-100, w:50, h:60, lives:100, shield:false, doubleShot:0, doubleTimer:0};
-let bullets=[], enemies=[], powerUps=[], explosions=[];
-let keys={}, score=0;
+// --- Persistent state
+let level=parseInt(localStorage.getItem('fs_level'))||1;
+let xp=parseInt(localStorage.getItem('fs_xp'))||0;
+let xpGoal=parseInt(localStorage.getItem('fs_xpGoal'))||100;
+let highScore=parseInt(localStorage.getItem('fs_high'))||0;
 
-function spawnEnemy(){ enemies.push({x:Math.random()*(canvas.width-40), y:-40, w:40, h:40, hp:40}); }
-function spawnPowerup(){ 
-    const types=['life','shield','double']; 
-    powerUps.push({x:Math.random()*(canvas.width-20), y:-20, w:20, h:20, type:types[Math.floor(Math.random()*3)]}); 
+// --- Game state
+let gameStarted=false, gameOver=false, paused=false;
+let score=0, kills=0;
+const maxEnemies=10, maxPowerUps=3;
+let spawnRate=1200, enemyHP=40;
+
+// --- Difficulty
+const difficultySelect=document.getElementById('difficulty');
+const player={x:0,y:0,width:48,height:64,speed:7,lives:100,maxLives:100,shield:false,doubleShot:false};
+function applyDifficulty(mode){
+  if(mode==='easy'){ spawnRate=1600; enemyHP=30; player.speed=8; }
+  else if(mode==='normal'){ spawnRate=1200; enemyHP=40; player.speed=7; }
+  else{ spawnRate=900; enemyHP=55; player.speed=6; }
+}
+applyDifficulty(difficultySelect.value);
+
+// --- Sprites
+function makeSprite_drawPixelArt(w,h,drawFn){ const c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d'); g.imageSmoothingEnabled=false; drawFn(g,w,h); return c.toDataURL(); }
+const spriteSize=32;
+const playerSrc=makeSprite_drawPixelArt(spriteSize,spriteSize,(g,w,h)=>{ g.clearRect(0,0,w,h); g.fillStyle='#00d1a1'; g.fillRect(12,4,8,18); g.fillStyle='#003f2f'; g.fillRect(12,4,8,4); g.fillStyle='#00b388'; g.fillRect(8,18,4,6); g.fillRect(20,18,4,6); g.fillStyle='#ff8a00'; g.fillRect(14,22,4,6); });
+const bulletSrc=makeSprite_drawPixelArt(8,16,(g,w,h)=>{ g.clearRect(0,0,w,h); g.fillStyle='#ffec5c'; g.fillRect(2,0,4,12); g.fillStyle='#ffaa00'; g.fillRect(3,12,2,4); });
+const enemySrc=makeSprite_drawPixelArt(spriteSize,spriteSize,(g,w,h)=>{ g.clearRect(0,0,w,h); g.fillStyle='#ff6b6b'; g.fillRect(6,6,20,20); g.fillStyle='#7f1d1d'; g.fillRect(6,6,20,6); g.fillStyle='#ffa3a3'; g.fillRect(10,12,12,12); });
+
+const playerImg=new Image(); playerImg.src=playerSrc;
+const bulletImg=new Image(); bulletImg.src=bulletSrc;
+const enemyImg=new Image(); enemyImg.src=enemySrc;
+
+// --- Arrays
+const bullets=[], enemies=[], powerUps=[];
+let shieldTimer=0, doubleShotTimer=0;
+
+// --- Audio
+const audioCtx=new (window.AudioContext||window.webkitAudioContext)(); 
+let soundOn=true;
+let masterGain=audioCtx.createGain(); masterGain.gain.value=0.9; masterGain.connect(audioCtx.destination);
+document.getElementById('vol').oninput=(e)=>{ masterGain.gain=parseFloat(e.target.value); }
+function playTone(freq,type='sine',time=0.06,gain=0.12){ if(!soundOn)return; const t0=audioCtx.currentTime; const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type=type; o.frequency.setValueAtTime(freq,t0); g.gain.setValueAtTime(gain,t0); o.connect(g); g.connect(masterGain); o.start(t0); o.stop(t0+time); }
+function soundShoot(){ playTone(1200,'sawtooth',0.05,0.06); }
+function soundHit(){ playTone(600,'triangle',0.08,0.08); }
+function soundDamage(){ playTone(220,'sawtooth',0.18,0.14); }
+function soundPickup(){ playTone(1400,'sine',0.12,0.08); }
+function soundLevelUp(){ const now=audioCtx.currentTime; [520,660,780].forEach((f,i)=>{ const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type='sine'; o.frequency.setValueAtTime(f,now); g.gain.setValueAtTime(0.08/(i+1),now); o.connect(g); g.connect(masterGain); o.start(now+i*0.02); o.stop(now+0.4+i*0.02); }); }
+
+// --- HUD elements
+const hudScore=document.getElementById('hudScore'), hudLevel=document.getElementById('hudLevel'), hudHS=document.getElementById('hudHS'), hudPower=document.getElementById('hudPower');
+
+// --- UI buttons
+const playBtn=document.getElementById('playBtn'), playDemoBtn=document.getElementById('playDemo'), menuElem=document.getElementById('menu'), pauseOverlay=document.getElementById('pauseOverlay');
+const settingsToggle=document.getElementById('settingsToggle'), settingsPanel=document.getElementById('settingsPanel'), closeSettings=document.getElementById('closeSettings');
+const soundToggle=document.getElementById('soundToggle'), resetProgress=document.getElementById('resetProgress');
+const resumeBtn=document.getElementById('resumeBtn'), pauseMenuBtn=document.getElementById('pauseMenuBtn'), restartBtnMain=document.getElementById('restartBtnMain'), menuBtnMain=document.getElementById('menuBtnMain');
+
+// --- Event handlers
+playBtn.onclick=()=>startGame(); playDemoBtn.onclick=()=>startGame(true);
+resumeBtn.onclick=()=>togglePause(false);
+pauseMenuBtn.onclick=()=>{ togglePause(false); menuElem.style.display='flex'; gameOver=false; gameStarted=false; }
+restartBtnMain.onclick=()=>{ startGame(); document.getElementById('gameover').style.display='none'; }
+menuBtnMain.onclick=()=>{ document.getElementById('gameover').style.display='none'; menuElem.style.display='flex'; gameStarted=false; gameOver=false; }
+
+settingsToggle.onclick=()=>{ settingsPanel.style.display=settingsPanel.style.display==='block'?'none':'block'; };
+closeSettings.onclick=()=>{ settingsPanel.style.display='none'; };
+soundToggle.onchange=()=>{ soundOn=soundToggle.checked; if(!soundOn) masterGain.gain=0; else masterGain.gain=parseFloat(document.getElementById('vol').value); };
+difficultySelect.onchange=()=>{ applyDifficulty(difficultySelect.value); refreshSpawner(); };
+resetProgress.onclick=()=>{ if(confirm('Czy na pewno zresetować poziom/XP/high score?')){ level=1; xp=0; xpGoal=100; highScore=0; localStorage.removeItem('fs_level'); localStorage.removeItem('fs_xp'); localStorage.removeItem('fs_xpGoal'); localStorage.removeItem('fs_high'); updateHUD(); } };
+
+// --- Functions: spawnEnemy, spawnPowerup, fire, startGame, togglePause, update, draw etc.
+// ... (tu kontynuujesz cały Twój istniejący update/draw loop)
+// Dodajemy tylko w update: obsługę doubleShotTimer i aktualizację hudPower
+
+// --- Na końcu loop:
+function updateHUD(){ 
+  hudScore.innerText=score; hudLevel.innerText=level; hudHS.innerText=highScore; 
+  if(player.doubleShot){ hudPower.innerText='Double Shot: '+Math.ceil(doubleShotTimer/60)+'s'; } 
+  else hudPower.innerText='Brak'; 
 }
 
-document.addEventListener('keydown', e=>keys[e.key]=true);
-document.addEventListener('keyup', e=>keys[e.key]=false);
-
-function fire(){ 
-    if(player.doubleShot>0){
-        bullets.push({x:player.x-15, y:player.y-30, w:10, h:20});
-        bullets.push({x:player.x+5, y:player.y-30, w:10, h:20});
-    } else {
-        bullets.push({x:player.x-5, y:player.y-30, w:10, h:20});
-    }
-}
-
-function rectColl(a,b){ return a.x<a.x+b.w && a.x+a.w>b.x && a.y<a.y+b.h && a.y+a.h>b.y; }
-
-function update(){
-    if(keys['ArrowLeft']) player.x-=7;
-    if(keys['ArrowRight']) player.x+=7;
-    if(keys[' ']) fire();
-    player.x=Math.max(0, Math.min(canvas.width-player.w, player.x));
-
-    bullets.forEach((b,i)=>{ b.y-=12; if(b.y<0) bullets.splice(i,1); });
-    
-    enemies.forEach((e,i)=>{
-        e.y+=2;
-        bullets.forEach((b,j)=>{
-            if(b.x<b.x+b.w && b.x+b.w>e.x && b.y<b.y+b.h && b.y+b.h>e.y){
-                bullets.splice(j,1); e.hp-=20;
-                if(e.hp<=0){ explosions.push({x:e.x,y:e.y,r:0}); enemies.splice(i,1); score+=100; }
-            }
-        });
-        if(player.shield===false && player.x<e.x+e.w && player.x+player.w>e.x && player.y<e.y+e.h && player.y+player.h>e.y){
-            player.lives-=20; enemies.splice(i,1);
-        }
-    });
-
-    powerUps.forEach((p,i)=>{
-        p.y+=2;
-        if(player.x<p.x+p.w && player.x+player.w>p.x && player.y<p.y+p.h && player.y+player.h>p.y){
-            if(p.type==='life') player.lives=Math.min(100,player.lives+20);
-            if(p.type==='shield') player.shield=true; setTimeout(()=>player.shield=false,5000);
-            if(p.type==='double') player.doubleShot=1; player.doubleTimer=300; 
-            powerUps.splice(i,1);
-        }
-    });
-
-    if(player.doubleShot>0){ player.doubleTimer--; if(player.doubleTimer<=0) player.doubleShot=0; }
-
-    explosions.forEach((ex,i)=>{ ex.r+=4; if(ex.r>30) explosions.splice(i,1); });
-}
-
-function draw(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    // player
-    ctx.fillStyle=player.shield?'cyan':'green';
-    ctx.fillRect(player.x,player.y,player.w,player.h);
-
-    // bullets
-    ctx.fillStyle='yellow';
-    bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
-
-    // enemies
-    ctx.fillStyle='red';
-    enemies.forEach(e=>ctx.fillRect(e.x,e.y,e.w,e.h));
-
-    // powerups
-    powerUps.forEach(p=>{
-        if(p.type==='life') ctx.fillStyle='lime';
-        if(p.type==='shield') ctx.fillStyle='cyan';
-        if(p.type==='double') ctx.fillStyle='magenta';
-        ctx.fillRect(p.x,p.y,p.w,p.h);
-    });
-
-    // explosions
-    ctx.strokeStyle='orange'; ctx.lineWidth=2;
-    explosions.forEach(ex=>ctx.beginPath(),ctx.arc(ex.x+20,ex.y+20,ex.r,0,Math.PI*2),ctx.stroke());
-
-    document.getElementById('score').innerText=score;
-    document.getElementById('powerupInfo').innerText='Power-up: '+(player.doubleShot>0?'Double Shot':'brak');
-}
-
-function loop(){ update(); draw(); requestAnimationFrame(loop); }
-
-setInterval(spawnEnemy,1500);
-setInterval(spawnPowerup,7000);
-loop();
 </script>
 </body>
 </html>
