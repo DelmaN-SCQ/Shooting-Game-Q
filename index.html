@@ -3,19 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Neon Strzelanka Stabilna</title>
+<title>Neon Strzelanka Ultra</title>
 <style>
 body{margin:0;background:#000;overflow:hidden;font-family:Arial;}
-canvas{display:block;margin:auto;}
+canvas{display:block;}
 #menu,#gameover{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#0ff;text-align:center;}
-button{padding:10px 20px;font-size:18px;cursor:pointer;margin-top:10px;border:none;border-radius:5px;background:#111;color:#0ff;text-shadow:0 0 5px #0ff;}
-button:hover{background:#333;}
+button{padding:12px 24px;font-size:20px;cursor:pointer;margin-top:10px;border:none;border-radius:8px;background:#111;color:#0ff;text-shadow:0 0 10px #0ff;}
+button:hover{background:#222;}
 </style>
 </head>
 <body>
+
 <div id="menu">
-<h1>Neon Strzelanka</h1>
-<p>Strzał: SPACJA | Ruch: Strzałki</p>
+<h1>Neon Strzelanka Ultra</h1>
+<p>Ruch: Strzałki | Strzał: SPACJA</p>
 <button id="startBtn">Start</button>
 </div>
 
@@ -28,7 +29,6 @@ button:hover{background:#333;}
 <canvas id="gameCanvas"></canvas>
 
 <script>
-// --- Canvas ---
 const canvas=document.getElementById('gameCanvas');
 const ctx=canvas.getContext('2d');
 canvas.width=window.innerWidth;
@@ -38,14 +38,14 @@ canvas.height=window.innerHeight;
 let gameStarted=false, gameOver=false;
 const player={x:canvas.width/2,y:canvas.height-80,width:30,height:50,speed:7,lives:100,maxLives:100,shield:false};
 const bullets=[], bulletSpeed=15;
-const enemies=[], maxEnemies=20, enemySpeed=2;
-const powerUps=[], maxPowerUps=5;
-const particles=[], maxParticles=100;
-let score=0, level=1, levelTimer=0, kills=0, shieldTimer=0;
+const enemies=[], maxEnemies=15, enemySpeed=2;
+const powerUps=[], maxPowerUps=3;
+const particles=[], maxParticles=80;
+let score=0, level=1, levelTimer=0, shieldTimer=0;
 
-// --- Stars ---
-const stars=[];
-for(let i=0;i<200;i++){stars.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*2+1,speed:Math.random()*0.5+0.3});}
+// --- Stars and neon background lines ---
+const stars=[]; for(let i=0;i<150;i++){stars.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*2+1,speed:Math.random()*0.3+0.2});}
+const lines=[]; for(let i=0;i<20;i++){lines.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,length:Math.random()*100+50,speed:Math.random()*1+0.5});}
 
 // --- Sounds ---
 const shootSound=new Audio('https://freesound.org/data/previews/66/66717_931655-lq.mp3');
@@ -67,7 +67,7 @@ document.getElementById('menuBtn').onclick=()=>{gameOver=false;gameStarted=false
 function resetGame(){
     player.x=canvas.width/2; player.y=canvas.height-80; player.lives=100; player.shield=false;
     bullets.length=0; enemies.length=0; powerUps.length=0; particles.length=0;
-    score=0; level=1; levelTimer=0; kills=0; shieldTimer=0;
+    score=0; level=1; levelTimer=0; shieldTimer=0;
 }
 
 // --- Shoot ---
@@ -104,7 +104,7 @@ function spawnPowerUp(){
 }
 
 setInterval(()=>{if(gameStarted&&!gameOver) spawnEnemy();},1000);
-setInterval(()=>{if(gameStarted&&!gameOver) spawnPowerUp();},12000);
+setInterval(()=>{if(gameStarted&&!gameOver) spawnPowerUp();},15000);
 
 // --- Update ---
 function update(){
@@ -128,7 +128,7 @@ function update(){
             if(bullets[j].x<e.x+e.width && bullets[j].x+bullets[j].width>e.x &&
                bullets[j].y<e.y+e.height && bullets[j].y+bullets[j].height>e.y){
                 bullets.splice(j,1); e.hp-=20; createParticle(e.x+e.width/2,e.y+e.height/2,'magenta'); hitSound.currentTime=0; hitSound.play();
-                if(e.hp<=0){score+=10;kills++;enemies.splice(i,1);} break;
+                if(e.hp<=0){score+=10;enemies.splice(i,1);} break;
             }
         }
         // Player collision
@@ -157,30 +157,35 @@ function update(){
 
     // Particles
     for(let i=particles.length-1;i>=0;i--){let p=particles[i]; p.x+=p.dx; p.y+=p.dy; p.life--; if(p.life<=0) particles.splice(i,1);}
+    // Stars & lines
     for(let s of stars){s.y+=s.speed; if(s.y>canvas.height) s.y=0;}
+    for(let l of lines){l.y+=l.speed; if(l.y>canvas.height) l.y=-l.length;}
 }
 
 // --- Draw ---
 function draw(){
 ctx.clearRect(0,0,canvas.width,canvas.height);
 
+// Neon background lines
+ctx.strokeStyle='cyan'; ctx.lineWidth=2;
+for(let l of lines){ctx.beginPath(); ctx.moveTo(l.x,l.y); ctx.lineTo(l.x,l.y+l.length); ctx.stroke();}
+
 // Stars
-for(let s of stars){ctx.fillStyle='white';ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();}
+ctx.fillStyle='white'; for(let s of stars){ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();}
 
 // HUD
 ctx.fillStyle='#0ff'; ctx.font='20px Arial'; ctx.shadowColor='#0ff'; ctx.shadowBlur=10;
 ctx.fillText(`Punkty: ${score}`,20,30);
 ctx.fillText(`Poziom: ${level}`,20,60);
-ctx.fillText(`Pokonani: ${kills}`,20,90);
 
 // Health bar
 ctx.shadowBlur=0;
-ctx.fillStyle='gray'; ctx.fillRect(20,110,200,20);
-ctx.fillStyle='lime'; ctx.fillRect(20,110,player.lives/100*200,20);
-ctx.strokeStyle='#0ff'; ctx.strokeRect(20,110,200,20);
+ctx.fillStyle='gray'; ctx.fillRect(20,80,200,20);
+ctx.fillStyle='lime'; ctx.fillRect(20,80,player.lives/100*200,20);
+ctx.strokeStyle='#0ff'; ctx.strokeRect(20,80,200,20);
 
 // Shield icon
-if(player.shield){ctx.fillStyle='deepskyblue'; ctx.beginPath(); ctx.arc(250,120,10,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#0ff';ctx.stroke();}
+if(player.shield){ctx.fillStyle='deepskyblue'; ctx.beginPath(); ctx.arc(230,90,10,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#0ff';ctx.stroke();}
 
 // Player
 ctx.fillStyle=player.shield?'deepskyblue':'lime';
@@ -190,16 +195,10 @@ ctx.lineTo(player.x+player.width/2,player.y+player.height/2);
 ctx.closePath(); ctx.fill();
 
 // Bullets
-for(let b of bullets){
-    ctx.fillStyle='yellow'; ctx.fillRect(b.x,b.y,b.width,b.height);
-    ctx.strokeStyle='yellow'; ctx.shadowBlur=10; ctx.shadowColor='yellow'; ctx.strokeRect(b.x,b.y,b.width,b.height); ctx.shadowBlur=0;
-}
+for(let b of bullets){ctx.fillStyle='yellow'; ctx.fillRect(b.x,b.y,b.width,b.height); ctx.strokeStyle='yellow'; ctx.shadowBlur=10; ctx.shadowColor='yellow'; ctx.strokeRect(b.x,b.y,b.width,b.height); ctx.shadowBlur=0;}
 
 // Enemies
-for(let e of enemies){
-    ctx.fillStyle=e.color; ctx.fillRect(e.x,e.y,e.width,e.height);
-    ctx.fillStyle='lime'; ctx.fillRect(e.x,e.y-5,e.width*(e.hp/e.maxHp),3);
-}
+for(let e of enemies){ctx.fillStyle=e.color; ctx.fillRect(e.x,e.y,e.width,e.height); ctx.fillStyle='lime'; ctx.fillRect(e.x,e.y-5,e.width*(e.hp/e.maxHp),3);}
 
 // Power-ups
 for(let p of powerUps){
