@@ -3,590 +3,839 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Futuristic Shooter — Pro (stable)</title>
+<title>Shooting Game Q Pro</title>
 <style>
   :root{
-    --bg1:#071025; --bg2:#000814; --accent:#1de9b6; --accent2:#66fcf1;
-    --muted:#9aa5b1;
+    --bg1:#071018; --bg2:#0b0d10; --accent:#0fd3ff;
+    --panel:#0f1720; --muted:#94a3b8;
+    --accent2:#8be04a; --danger:#ff6b6b;
   }
-  html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg1),var(--bg2));font-family:Inter,Arial,Helvetica,sans-serif;color:#e6f7ff;}
-  canvas{display:block;width:100vw;height:100vh;}
-  /* Menu & overlays */
-  .overlay{position:fixed;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
-  .card{pointer-events:auto;background:linear-gradient(180deg,rgba(7,16,37,0.85),rgba(0,8,20,0.9));border-radius:14px;padding:22px;border:1px solid rgba(110,230,190,0.12);box-shadow:0 10px 30px rgba(0,0,0,0.6);min-width:320px;max-width:720px;}
-  .title{font-size:36px;text-align:center;margin:0 0 6px 0;color:var(--accent);letter-spacing:1px;text-shadow:0 6px 18px rgba(34,202,163,0.08);}
-  .subtitle{color:var(--muted);text-align:center;margin:6px 0 14px 0;}
-  .btn{display:inline-block;padding:12px 20px;border-radius:10px;background:linear-gradient(90deg,var(--accent),var(--accent2));border:none;color:#021019;font-weight:700;cursor:pointer;font-size:16px;margin:6px;}
-  .btn.small{padding:8px 12px;font-size:13px;border-radius:8px;}
-  .row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
-  /* top-right HUD cluster */
-  #hudCluster{position:fixed;right:18px;top:18px;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:auto}
-  .hudBox{background:rgba(10,18,30,0.45);padding:8px 12px;border-radius:10px;border:1px solid rgba(160,255,230,0.06);backdrop-filter:blur(6px);min-width:170px}
-  .hudTitle{font-size:13px;color:var(--muted);margin:0}
-  .hudValue{font-size:18px;color:#eafff7;margin:0;font-weight:600}
-  /* settings small toggle top-left */
-  #settingsToggle{position:fixed;left:18px;top:18px;padding:8px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);color:var(--accent);cursor:pointer;z-index:50}
-  /* pause overlay */
-  #pauseOverlay{position:fixed;left:0;top:0;right:0;bottom:0;display:none;align-items:center;justify-content:center;background:rgba(1,4,10,0.6);backdrop-filter:blur(4px);z-index:40}
-  .pauseBox{border-radius:12px;padding:18px 26px;background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.02));text-align:center;border:1px solid rgba(255,255,255,0.04)}
-  .pauseTitle{font-size:42px;color:var(--accent);margin:0 0 6px 0}
-  /* settings panel */
-  #settingsPanel{position:fixed;left:18px;top:60px;width:320px;max-width:calc(100vw - 40px);z-index:60;display:none}
-  .settingRow{display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.005));margin-bottom:8px;border:1px solid rgba(255,255,255,0.02)}
-  .muted{color:var(--muted);font-size:13px}
-  /* small helpers */
-  .center{display:flex;align-items:center;justify-content:center}
-  footer{position:fixed;left:0;right:0;bottom:8px;text-align:center;color:rgba(230,247,255,0.06);font-size:12px}
-  @media (max-width:520px){
-    .card{min-width:260px;padding:16px}
-    .title{font-size:28px}
+  body{margin:0; height:100vh; background:linear-gradient(180deg,var(--bg1),var(--bg2)); font-family:Inter, Arial, sans-serif; color:#e6eef6; overflow:hidden;}
+  canvas{display:block;}
+  /* Center menus */
+  .center {
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    text-align:center;
+  }
+  #menu, #pauseMenu, #gameover, #settingsPanel {
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.12));
+    border:1px solid rgba(255,255,255,0.06);
+    padding:24px; border-radius:12px; box-shadow: 0 8px 30px rgba(2,6,23,0.6);
+  }
+  h1{margin:10px 0 6px; font-size:40px; letter-spacing:1px; color:var(--accent); text-shadow:0 4px 18px rgba(15,211,255,0.12);}
+  p.hint{color:var(--muted); margin:6px 0 14px;}
+  .btn{display:inline-block; padding:12px 22px; margin:8px; border-radius:10px; border:0; cursor:pointer; font-size:16px; color:#061018; background:linear-gradient(90deg,#9ef6ff,#7ad1ff); box-shadow:0 6px 18px rgba(10,130,160,0.12);}
+  .btn.secondary{background:linear-gradient(90deg,#cbd5e1,#94a3b8); color:#021018;}
+  .small{padding:8px 12px; font-size:14px; border-radius:8px;}
+  #topRight {
+    position: absolute; right:18px; top:10px; display:flex; gap:12px; align-items:center;
+  }
+  .statBox {
+    background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));
+    padding:8px 12px; border-radius:10px; border:1px solid rgba(255,255,255,0.04);
+    min-width:140px; text-align:left; color:#dff6ff; box-shadow: 0 6px 30px rgba(2,6,23,0.45);
+  }
+  .statTitle{font-size:12px; color:var(--muted);}
+  .statValue{font-size:18px; font-weight:700; margin-top:4px;}
+  #settingsPanel{display:none; width:360px;}
+  label{display:block; margin:8px 0 4px; font-size:13px; color:var(--muted);}
+  select,input[type=checkbox]{width:100%; padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background:rgba(255,255,255,0.02); color:inherit;}
+  #footerHint{position:absolute; left:18px; bottom:10px; color:var(--muted); font-size:13px;}
+  /* Pause overlay */
+  #pauseOverlay{position:absolute;left:0;top:0;right:0;bottom:0;background:rgba(2,6,23,0.45); display:flex; align-items:center; justify-content:center; z-index:50; display:none;}
+  #pauseBox{padding:18px 28px; border-radius:12px; background:linear-gradient(180deg,#071018,#0b1220); border:1px solid rgba(255,255,255,0.04); text-align:center;}
+  #themePreview{width:36px;height:18px;border-radius:3px; display:inline-block; margin-left:8px; border:1px solid rgba(255,255,255,0.06);}
+  /* small responsive */
+  @media (max-width:600px){
+    h1{font-size:28px;} .statBox{min-width:110px; font-size:13px;}
   }
 </style>
 </head>
 <body>
-
-<!-- Canvas -->
-<canvas id="gameCanvas"></canvas>
-
-<!-- HUD cluster (right top) -->
-<div id="hudCluster" aria-hidden="true">
-  <div class="hudBox"><p class="hudTitle">Punkty</p><p id="hudScore" class="hudValue">0</p></div>
-  <div class="hudBox"><p class="hudTitle">Poziom</p><p id="hudLevel" class="hudValue">1</p></div>
-  <div class="hudBox"><p class="hudTitle">High Score</p><p id="hudHS" class="hudValue">0</p></div>
-</div>
-
-<!-- Settings toggle & panel -->
-<button id="settingsToggle" title="Ustawienia (kliknij)">⚙</button>
-<div id="settingsPanel" class="card" aria-hidden="true">
-  <h3 style="margin:0 0 8px 0;color:var(--accent)">Ustawienia</h3>
-  <div class="settingRow"><div><div style="font-weight:700">Dźwięk</div><div class="muted">Włącz/Wyłącz efekty</div></div>
-    <div><input type="checkbox" id="soundToggle" checked /></div></div>
-
-  <div class="settingRow"><div><div style="font-weight:700">Głośność</div><div class="muted">Reguluje level efektów</div></div>
-    <div><input id="vol" type="range" min="0" max="1" step="0.01" value="0.9" /></div></div>
-
-  <div class="settingRow"><div><div style="font-weight:700">Trudność</div><div class="muted">Wybierz tryb</div></div>
-    <div><select id="difficulty"><option value="easy">Easy</option><option value="normal" selected>Normal</option><option value="hard">Hard</option></select></div></div>
-
-  <div class="settingRow"><div><div style="font-weight:700">Zachowaj progres</div><div class="muted">Poziom/XP będą zapisane</div></div>
-    <div><button id="resetProgress" class="btn small" style="background:#ff6b6b;color:white">Resetuj</button></div></div>
-
-  <div style="margin-top:8px;text-align:center">
-    <button id="closeSettings" class="btn small" style="background:linear-gradient(90deg,#66fcf1,#1de9b6)">Zamknij</button>
+  <div id="topRight">
+    <div class="statBox"><div class="statTitle">Punkty</div><div id="uiScore" class="statValue">0</div></div>
+    <div class="statBox"><div class="statTitle">Poziom</div><div id="uiLevel" class="statValue">1</div></div>
+    <div class="statBox"><div class="statTitle">High Score</div><div id="uiHigh" class="statValue">0</div></div>
+    <button id="openSettings" class="btn small secondary">Ustawienia</button>
   </div>
-</div>
 
-<!-- Menu card -->
-<div id="menu" class="overlay">
-  <div class="card">
-    <h2 class="title">FUTURISTIC SHOOTER</h2>
-    <p class="subtitle">Pełnoekranowa strzelanka — pauza: <strong>P</strong> | ustawienia: ⚙</p>
-    <div class="row"><button id="playBtn" class="btn">Zagraj</button><button id="playDemo" class="btn small">Szybki start</button></div>
-    <p style="color:var(--muted);margin-top:12px;font-size:13px">Poruszaj się strzałkami, strzelaj SPACJĄ. Poziomy i XP zapisują się po odświeżeniu.</p>
+  <div id="menu" class="center">
+    <h1>Shooting Game Q Pro</h1>
+    <p class="hint">Motyw: <strong id="currentThemeName">Dark Metal</strong> · Pauza: <kbd>P</kbd></p>
+    <div>
+      <button id="startBtn" class="btn">Zagraj</button>
+      <button id="startHard" class="btn small secondary">Tryb: Hard</button>
+    </div>
+    <p class="hint">Wybierz trudność w ustawieniach. Możesz wcisnąć <strong>P</strong> żeby zapauzować.</p>
   </div>
-</div>
 
-<!-- Pause overlay -->
-<div id="pauseOverlay">
-  <div class="pauseBox">
-    <div class="pauseTitle">PAUZA</div>
-    <div style="margin-top:8px;color:var(--muted)">Naciśnij <strong>P</strong> aby wznowić</div>
-    <div style="margin-top:12px" class="row"><button id="resumeBtn" class="btn small">Wznów</button><button id="pauseMenuBtn" class="btn small">Menu</button></div>
+  <div id="settingsPanel" class="center" style="left:unset; right:18px; top:120px;">
+    <h3 style="margin:0 0 10px;color:var(--accent);">Ustawienia</h3>
+    <label>Motyw</label>
+    <select id="themeSelect">
+      <option value="darkmetal">Dark Metal</option>
+      <option value="space">Space Blue</option>
+      <option value="orchid">Neon Orchid</option>
+      <option value="classic">Classic Retro</option>
+    </select>
+    <label>Trudność</label>
+    <select id="difficulty">
+      <option value="easy">Easy</option>
+      <option value="normal" selected>Normal</option>
+      <option value="hard">Hard</option>
+    </select>
+    <label><input type="checkbox" id="muteToggle"> Wycisz dźwięki (Mute)</label>
+    <div style="display:flex; gap:8px; margin-top:10px;">
+      <button id="closeSettings" class="btn small secondary">Zamknij</button>
+      <button id="resetProgress" class="btn small">Resetuj poziom/XP</button>
+    </div>
   </div>
-</div>
 
-<!-- Gameover -->
-<div id="gameover" class="overlay" style="display:none">
-  <div class="card">
-    <h2 class="title">Koniec gry</h2>
-    <p class="subtitle">Twój wynik: <span id="finalScore">0</span></p>
-    <div class="row"><button id="restartBtnMain" class="btn">Restart</button><button id="menuBtnMain" class="btn small">Menu</button></div>
+  <div id="pauseOverlay"><div id="pauseBox">
+    <h2 style="margin:6px 0;color:var(--accent);">PAUZA</h2>
+    <p style="color:var(--muted); margin:6px 0 12px;">Wciśnij <kbd>P</kbd> aby wznowić</p>
+    <div>
+      <button id="resumeBtn" class="btn">Wznów</button>
+      <button id="pauseSettings" class="btn small secondary">Ustawienia</button>
+    </div>
+  </div></div>
+
+  <div id="gameover" class="center" style="display:none;">
+    <h1>Przegrałeś!</h1>
+    <p class="hint">Poziom i XP zostały zapisane.</p>
+    <button id="restartBtn2" class="btn">Restart</button>
+    <button id="backToMenu" class="btn small secondary">Menu</button>
   </div>
-</div>
 
-<footer>© Futuristic Shooter — demo</footer>
+  <canvas id="gameCanvas"></canvas>
+  <div id="footerHint">Tip: Pauza = <strong>P</strong> · Mute dostępny w ustawieniach</div>
 
 <script>
 /* -------------------------
-   Setup canvas and resizing
+   Shooting Game Q Pro (single file)
+   - Sprite PNGs generated in-code (offscreen canvas)
+   - Themes, difficulties, pause, improved sounds, level-up sound
+   - Explosions, improved rocket/pellet sizes, settings panel
+   - Persistent: level, xp, xpGoal, highScore (localStorage)
+   - Useful thing chosen: MUTE toggle + difficulty quick-start
    ------------------------- */
+
+/* Canvas setup */
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-function resize() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
-window.addEventListener('resize', resize, {passive:true});
+function resize(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.addEventListener('resize', resize);
 resize();
 
-/* -------------------------
-   Persistent state
-   ------------------------- */
-let level = parseInt(localStorage.getItem('fs_level')) || 1;
-let xp = parseInt(localStorage.getItem('fs_xp')) || 0;
-let xpGoal = parseInt(localStorage.getItem('fs_xpGoal')) || 100;
-let highScore = parseInt(localStorage.getItem('fs_high')) || 0;
-
-/* -------------------------
-   Game state & configs
-   ------------------------- */
-let gameStarted = false, gameOver=false, paused=false;
-let score = 0, kills = 0;
-const maxEnemies = 10, maxPowerUps = 2;
-let spawnRate = 1200; // ms default normal
-let enemyHP = 40;
-
-/* Difficulty mapping */
-const difficultySelect = document.getElementById('difficulty');
-function applyDifficulty(mode){
-  if(mode==='easy'){ spawnRate=1600; enemyHP=30; }
-  else if(mode==='normal'){ spawnRate=1200; enemyHP=40; }
-  else { spawnRate=900; enemyHP=55; }
-}
-applyDifficulty(difficultySelect.value);
-
-/* -------------------------
-   Sprites generation (in-code) - create scaled images via offscreen canvas
-   ------------------------- */
-function makeSprite_drawPixelArt(w,h,drawFn){
-  const c = document.createElement('canvas');
-  c.width = w; c.height = h;
-  const g = c.getContext('2d');
-  // pixelated look
-  g.imageSmoothingEnabled = false;
-  drawFn(g,w,h);
-  return c.toDataURL();
-}
-
-const spriteSize = 32;
-// player sprite: simple rocket pixel-art (scaled later)
-const playerSrc = makeSprite_drawPixelArt(spriteSize,spriteSize,(g,w,h)=>{
-  // background transparent
-  g.clearRect(0,0,w,h);
-  // body
-  g.fillStyle='#00d1a1'; g.fillRect(12,4,8,18);
-  g.fillStyle='#003f2f'; g.fillRect(12,4,8,4);
-  // wings
-  g.fillStyle='#00b388'; g.fillRect(8,18,4,6);
-  g.fillRect(20,18,4,6);
-  // flame
-  g.fillStyle='#ff8a00'; g.fillRect(14,22,4,6);
-});
-// bullet sprite:
-const bulletSrc = makeSprite_drawPixelArt(8,16,(g,w,h)=>{
-  g.clearRect(0,0,w,h);
-  g.fillStyle='#ffec5c'; g.fillRect(2,0,4,12);
-  g.fillStyle='#ffaa00'; g.fillRect(3,12,2,4);
-});
-// enemy sprite:
-const enemySrc = makeSprite_drawPixelArt(spriteSize,spriteSize,(g,w,h)=>{
-  g.clearRect(0,0,w,h);
-  g.fillStyle='#ff6b6b'; g.fillRect(6,6,20,20);
-  g.fillStyle='#7f1d1d'; g.fillRect(6,6,20,6);
-  g.fillStyle='#ffa3a3'; g.fillRect(10,12,12,12);
-});
-
-const playerImg = new Image(); playerImg.src = playerSrc;
-const bulletImg = new Image(); bulletImg.src = bulletSrc;
-const enemyImg = new Image(); enemyImg.src = enemySrc;
-
-/* -------------------------
-   Player, bullets, enemies
-   ------------------------- */
-const player = {
-  x: canvas.width/2, y: canvas.height - 110,
-  width: 48, height: 64, speed: 7,
-  lives: 100, maxLives: 100, shield:false
-};
-const bullets = []; // {x,y,w,h,dx}
-const enemies = []; // {x,y,w,h,hp,color,flash}
-const powerUps = []; // {x,y,size,type,pulse}
-
-/* -------------------------
-   Audio (WebAudio simple synth)
-   ------------------------- */
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-let soundOn = true;
-let masterGain = audioCtx.createGain(); masterGain.gain.value = 0.9; masterGain.connect(audioCtx.destination);
-const volSlider = document.getElementById('vol');
-
-function setVolume(v){
-  masterGain.gain.value = v;
-}
-setVolume(volSlider.value);
-
-function playTone(freq, type='sine', time=0.06, gain=0.12){
-  if(!soundOn) return;
-  const t0 = audioCtx.currentTime;
-  const o = audioCtx.createOscillator();
-  const g = audioCtx.createGain();
-  o.type = type; o.frequency.setValueAtTime(freq,t0);
-  g.gain.setValueAtTime(gain,t0);
-  o.connect(g); g.connect(masterGain);
-  o.start(t0); o.stop(t0+time);
-}
-/* event sounds */
-function soundShoot(){ playTone(1200,'sawtooth',0.05,0.06); }
-function soundHit(){ playTone(600,'triangle',0.08,0.08); }
-function soundDamage(){ playTone(220,'sawtooth',0.18,0.14); }
-function soundPickup(){ playTone(1400,'sine',0.12,0.08); }
-function soundLevelUp(){ // richer chord
-  if(!soundOn) return;
-  const now = audioCtx.currentTime;
-  const freqs=[520,660,780];
-  freqs.forEach((f,i)=>{
-    const o=audioCtx.createOscillator(); const g=audioCtx.createGain();
-    o.type='sine'; o.frequency.setValueAtTime(f,now);
-    g.gain.setValueAtTime(0.08/(i+1),now);
-    o.connect(g); g.connect(masterGain);
-    o.start(now + i*0.02); o.stop(now + 0.4 + i*0.02);
-  });
-}
-
-/* -------------------------
-   UI elements & handlers
-   ------------------------- */
-const hudScore = document.getElementById('hudScore');
-const hudLevel = document.getElementById('hudLevel');
-const hudHS = document.getElementById('hudHS');
-const playBtn = document.getElementById('playBtn');
-const playDemoBtn = document.getElementById('playDemo');
-const menuElem = document.getElementById('menu');
-const pauseOverlay = document.getElementById('pauseOverlay');
-const settingsToggle = document.getElementById('settingsToggle');
+/* UI refs */
+const uiScore = document.getElementById('uiScore');
+const uiLevel = document.getElementById('uiLevel');
+const uiHigh = document.getElementById('uiHigh');
+const menu = document.getElementById('menu');
+const startBtn = document.getElementById('startBtn');
+const startHardBtn = document.getElementById('startHard');
 const settingsPanel = document.getElementById('settingsPanel');
-const closeSettings = document.getElementById('closeSettings');
-const soundToggle = document.getElementById('soundToggle');
+const openSettingsBtn = document.getElementById('openSettings');
+const closeSettingsBtn = document.getElementById('closeSettings');
+const themeSelect = document.getElementById('themeSelect');
+const difficultySelect = document.getElementById('difficulty');
+const muteToggle = document.getElementById('muteToggle');
 const resetProgress = document.getElementById('resetProgress');
+const pauseOverlay = document.getElementById('pauseOverlay');
+const restartBtn = document.getElementById('restartBtn2');
+const backToMenu = document.getElementById('backToMenu');
 const resumeBtn = document.getElementById('resumeBtn');
-const pauseMenuBtn = document.getElementById('pauseMenuBtn');
-const restartBtnMain = document.getElementById('restartBtnMain');
-const menuBtnMain = document.getElementById('menuBtnMain');
+const pauseSettingsBtn = document.getElementById('pauseSettings');
+const currentThemeName = document.getElementById('currentThemeName');
 
-playBtn.onclick = ()=>{ startGame(); }
-playDemoBtn.onclick = ()=>{ startGame(true); } // quick demo
-resumeBtn.onclick = ()=>{ togglePause(false); }
-pauseMenuBtn.onclick = ()=>{ togglePause(false); menuElem.style.display='flex'; gameOver=false; gameStarted=false; }
-restartBtnMain.onclick = ()=>{ startGame(); document.getElementById('gameover').style.display='none'; }
-menuBtnMain.onclick = ()=>{ document.getElementById('gameover').style.display='none'; menuElem.style.display='flex'; gameStarted=false; gameOver=false; }
+/* Persistent state */
+let level = parseInt(localStorage.getItem('sgq_level')) || 1;
+let xp = parseInt(localStorage.getItem('sgq_xp')) || 0;
+let xpGoal = parseInt(localStorage.getItem('sgq_xpGoal')) || 100;
+let highScore = parseInt(localStorage.getItem('sgq_high')) || 0;
 
-settingsToggle.onclick = ()=>{
-  settingsPanel.style.display = settingsPanel.style.display === 'block' ? 'none' : 'block';
+/* Game state */
+let gameStarted = false, gameOver = false, paused = false;
+let score = 0, kills = 0;
+let player = null;
+let bullets = [], enemies = [], powerUps = [], explosions = [];
+
+/* Settings */
+let theme = localStorage.getItem('sgq_theme') || 'darkmetal';
+let difficulty = localStorage.getItem('sgq_diff') || 'normal';
+let isMuted = (localStorage.getItem('sgq_mute') === '1');
+
+/* Difficulty params */
+const difficultyPresets = {
+  easy:   { enemyMax:6, enemyHP:30, enemySpeed:1.2, spawnRate:1400 },
+  normal: { enemyMax:8, enemyHP:40, enemySpeed:1.8, spawnRate:1100 },
+  hard:   { enemyMax:12,enemyHP:60, enemySpeed:2.4, spawnRate:800  }
 };
-closeSettings.onclick = ()=>{ settingsPanel.style.display='none'; };
-soundToggle.onchange = ()=>{ soundOn = soundToggle.checked; if(!soundOn) masterGain.gain.value = 0; else masterGain.gain.value = parseFloat(volSlider.value); };
-volSlider.oninput = ()=>{ setVolume(parseFloat(volSlider.value)); };
-difficultySelect.onchange = ()=>{ applyDifficulty(difficultySelect.value); };
-resetProgress.onclick = ()=>{
-  if(confirm('Czy na pewno zresetować poziom/XP/high score?')) {
-    level=1; xp=0; xpGoal=100; highScore=0;
-    localStorage.removeItem('fs_level'); localStorage.removeItem('fs_xp'); localStorage.removeItem('fs_xpGoal'); localStorage.removeItem('fs_high');
-    updateHUD();
+let diff = difficultyPresets[difficulty];
+
+/* Theme presets */
+const themes = {
+  darkmetal: {bg1:'#071018', bg2:'#0b0d10', accent:'#7ad1ff', panel:'#0f1720'},
+  space:     {bg1:'#041426', bg2:'#001021', accent:'#6ff', panel:'#06121a'},
+  orchid:    {bg1:'#120517', bg2:'#200a1a', accent:'#ff7ad1', panel:'#1a0712'},
+  classic:   {bg1:'#001018', bg2:'#001820', accent:'#39ff14', panel:'#071014'}
+};
+
+/* Audio (small wrappers) */
+const audio = {
+  shoot: new Audio('https://freesound.org/data/previews/66/66717_931655-lq.mp3'),
+  hit:   new Audio('https://freesound.org/data/previews/256/256113_4486188-lq.mp3'),
+  pickup:new Audio('https://freesound.org/data/previews/331/331912_3248244-lq.mp3'),
+  damage:new Audio('https://freesound.org/data/previews/331/331912_3248244-lq.mp3'),
+  level: new Audio('https://freesound.org/data/previews/331/331903_3248244-lq.mp3') // different small tone
+};
+function playSound(s){
+  if(isMuted) return;
+  if(s && s.currentTime!==undefined){ try{ s.currentTime = 0; s.play(); }catch(e){} }
+}
+
+/* Generate small pixel sprites in-code (offscreen canvases) */
+function makeSprite(pixels, scale, colors){
+  const w = pixels[0].length, h = pixels.length;
+  const oc = document.createElement('canvas'); oc.width = w*scale; oc.height = h*scale;
+  const octx = oc.getContext('2d');
+  octx.imageSmoothingEnabled = false;
+  for(let y=0;y<h;y++){
+    for(let x=0;x<w;x++){
+      const v = pixels[y][x];
+      if(v===0) continue;
+      octx.fillStyle = colors[v] || '#000';
+      octx.fillRect(x*scale, y*scale, scale, scale);
+    }
   }
-};
+  const img = new Image();
+  img.src = oc.toDataURL('image/png');
+  return img;
+}
 
-/* -------------------------
-   utility: spawn helpers
-   ------------------------- */
+/* rocket 16x16 pixel art, will be scaled */
+const rocketMap = [
+  [0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0],
+  [0,0,0,2,3,3,3,2,0,0,0,0,0,0,0,0],
+  [0,0,2,3,4,4,4,3,2,0,0,0,0,0,0,0],
+  [0,2,3,4,4,4,4,4,3,2,0,0,0,0,0,0],
+  [0,2,3,4,4,4,4,4,3,2,0,0,0,0,0,0],
+  [0,2,3,4,4,5,4,4,3,2,0,0,0,0,0,0],
+  [0,0,2,3,3,3,3,3,2,0,0,0,0,0,0,0],
+  [0,0,0,2,2,2,2,2,0,0,0,0,0,0,0,0],
+  [0,0,0,0,6,6,6,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,6,6,6,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,6,6,6,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,6,0,0,0,0,0,0,0,0,0,0],
+  [0,0,0,0,6,6,6,0,0,0,0,0,0,0,0,0],
+  [0,0,0,6,6,6,6,6,0,0,0,0,0,0,0,0],
+  [0,0,0,2,2,0,2,2,0,0,0,0,0,0,0,0],
+  [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+];
+const rocketColors = {2:'#0fd3ff',3:'#6fffff',4:'#7fffbf',5:'#ffb34d',6:'#ff6b6b'};
+const rocketSprite = makeSprite(rocketMap,2,rocketColors); // scale2 -> 32x32 approx
+
+/* bullet sprite */
+const bulletMap = [
+  [0,2,0],
+  [2,2,2],
+  [0,2,0]
+];
+const bulletSprite = makeSprite(bulletMap,3,{2:'#ffea4d'}); // 3 => 9x9 (we will scale on draw)
+
+/* hp powerup (green dot) */
+const hpMap = [
+  [0,0,2,2,0,0],
+  [0,2,2,2,2,0],
+  [2,2,2,2,2,2],
+  [2,2,2,2,2,2],
+  [0,2,2,2,2,0],
+  [0,0,2,2,0,0]
+];
+const hpSprite = makeSprite(hpMap,3,{2:'#7ef05a'});
+
+/* shield powerup (blue) */
+const shieldMap = [
+  [0,3,3,3,0],
+  [3,3,3,3,3],
+  [3,3,3,3,3],
+  [3,3,3,3,3],
+  [0,3,3,3,0]
+];
+const shieldSprite = makeSprite(shieldMap,4,{3:'#5ad5ff'});
+
+/* Explosion frames generator (simple circles) */
+function spawnExplosion(x,y, color='#ffcc66'){
+  const e = {x,y,t:0,ttl:30,color};
+  explosions.push(e);
+}
+
+/* Helper: clamp */
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+/* Start/reset logic */
+function resetGame(resetPersistent=false){
+  player = {
+    x: canvas.width/2,
+    y: canvas.height-90,
+    width: 40,  // increased size rocket
+    height: 48,
+    speed: 7,
+    lives: 100,
+    maxLives: 100,
+    shield: false
+  };
+  bullets = [];
+  enemies = [];
+  powerUps = [];
+  explosions = [];
+  score = 0;
+  kills = 0;
+  shieldTimer = 0;
+  if(resetPersistent){
+    level = 1; xp = 0; xpGoal = 100; localSave();
+  }
+  updateUI();
+}
+
+/* Because we used let earlier for player/bullets, re-declare properly: */
+let shieldTimer = 0;
+resetGame(false);
+
+/* Save persistent to localStorage */
+function localSave(){
+  localStorage.setItem('sgq_level', level);
+  localStorage.setItem('sgq_xp', xp);
+  localStorage.setItem('sgq_xpGoal', xpGoal);
+  localStorage.setItem('sgq_high', highScore);
+  localStorage.setItem('sgq_theme', theme);
+  localStorage.setItem('sgq_diff', difficulty);
+  localStorage.setItem('sgq_mute', isMuted ? '1' : '0');
+}
+
+/* UI update */
+function updateUI(){
+  uiScore.innerText = score;
+  uiLevel.innerText = level;
+  uiHigh.innerText = highScore;
+  document.getElementById('currentThemeName').innerText = {
+    darkmetal:'Dark Metal', space:'Space Blue', orchid:'Neon Orchid', classic:'Classic Retro'
+  }[theme] || theme;
+}
+
+/* Spawning */
+let lastEnemySpawn = 0;
+let lastPowerSpawn = 0;
 function spawnEnemy(){
-  if(enemies.length >= maxEnemies) return;
-  const size = 36 + Math.floor(Math.random()*26);
-  const x = Math.random() * (canvas.width - size);
-  const color = ['#ff6b6b','#ffb86b','#b86bff','#6bd9ff'][Math.floor(Math.random()*4)];
-  enemies.push({ x, y:-size, width:size, height:size, hp: enemyHP, maxHp: enemyHP, color, flash:0 });
+  if(enemies.length >= diff.enemyMax) return;
+  const size = 36;
+  const x = Math.random()*(canvas.width - size);
+  const hp = diff.enemyHP;
+  const color = ['#f05a7a','#ff9f43','#a78bfa','#38bdf8'][Math.floor(Math.random()*4)];
+  enemies.push({x,y:-size,width:size,height:size,hp,maxHp:hp,color,hitFlash:0});
 }
 
-function spawnPowerup(){
-  if(powerUps.length >= maxPowerUps) return;
-  const size = 20;
-  const x = Math.random()* (canvas.width - size);
-  const type = Math.random()<0.5 ? 'life' : 'shield';
-  powerUps.push({ x, y:-size, size, type, pulse: Math.random()*Math.PI*2 });
-}
+/* Simple update loop with time delta for spawn control */
+let lastTime = performance.now();
+function gameLoop(t){
+  const dt = t - lastTime;
+  lastTime = t;
 
-/* periodic spawners (use setInterval but adapt to difficulty) */
-let enemySpawner = setInterval(()=>{ if(gameStarted && !paused && !gameOver) spawnEnemy(); }, spawnRate);
-let powerSpawner = setInterval(()=>{ if(gameStarted && !paused && !gameOver) spawnPowerup(); }, 15000);
+  if(!gameStarted){
+    drawBackground();
+    requestAnimationFrame(gameLoop);
+    return;
+  }
 
-/* update spawn interval when difficulty changes */
-function refreshSpawner(){
-  clearInterval(enemySpawner);
-  enemySpawner = setInterval(()=>{ if(gameStarted && !paused && !gameOver) spawnEnemy(); }, spawnRate);
+  if(!paused && !gameOver){
+    // spawn according to preset rate
+    lastEnemySpawn += dt;
+    if(lastEnemySpawn > diff.spawnRate){ spawnEnemy(); lastEnemySpawn = 0; }
+    lastPowerSpawn += dt;
+    if(lastPowerSpawn > 15000){ spawnPowerUp(); lastPowerSpawn = 0; }
+    update(dt);
+  }
+  draw();
+  requestAnimationFrame(gameLoop);
 }
+requestAnimationFrame(gameLoop);
 
-/* -------------------------
-   Player actions
-   ------------------------- */
-function fire(){
-  // larger bullets now
-  bullets.push({ x: player.x - 8, y: player.y - 28, w: 12, h: 28, speed: 18 });
-  soundShoot();
+/* Controls */
+const pressed = {};
+document.addEventListener('keydown', (e)=>{
+  pressed[e.key] = true;
+  if(!gameStarted && e.key === ' '){
+    startGame();
+  }
+  if(e.key === 'p' || e.key === 'P'){
+    togglePause();
+  }
+  if(e.key === 'm' || e.key === 'M'){
+    isMuted = !isMuted; localSave();
+  }
+});
+document.addEventListener('keyup', (e)=>{ pressed[e.key] = false; });
+
+/* Start functions (UI hookups) */
+startBtn.onclick = ()=>{ difficulty = difficultySelect.value; applyDifficulty(); startGame(); };
+startHardBtn.onclick = ()=>{ difficulty = 'hard'; difficultySelect.value = 'hard'; applyDifficulty(); startGame(); };
+openSettingsBtn.onclick = ()=>{ settingsPanel.style.display = 'block'; };
+closeSettingsBtn.onclick = ()=>{ settingsPanel.style.display = 'none'; };
+pauseSettingsBtn.onclick = ()=>{ settingsPanel.style.display = 'block'; pauseOverlay.style.display='none'; paused=false; };
+resumeBtn.onclick = ()=>{ togglePause(); };
+restartBtn.onclick = ()=>{ gameOver=false; startGame(false); document.getElementById('gameover').style.display='none'; };
+backToMenu.onclick = ()=>{ gameOver=false; gameStarted=false; menu.style.display='block'; document.getElementById('gameover').style.display='none'; };
+resetProgress.onclick = ()=>{ if(confirm('Resetować poziom i XP?')){ level=1; xp=0; xpGoal=100; localSave(); updateUI(); } };
+
+themeSelect.value = theme;
+difficultySelect.value = difficulty;
+muteToggle.checked = isMuted;
+openSettingsBtn.onclick = ()=>{ settingsPanel.style.display = settingsPanel.style.display === 'block' ? 'none' : 'block'; };
+
+/* apply difficulty and theme */
+function applyDifficulty(){
+  difficulty = difficultySelect.value;
+  diff = difficultyPresets[difficulty];
+  localSave();
 }
-function startGame(demo=false){
-  // if demo: quick level & small spawn burst
+difficultySelect.onchange = ()=>{ applyDifficulty(); };
+themeSelect.onchange = ()=>{
+  theme = themeSelect.value;
+  Object.assign(document.documentElement.style, {});
+  localSave();
+  updateTheme();
+};
+muteToggle.onchange = ()=>{ isMuted = muteToggle.checked; localSave(); };
+
+/* Start actual game */
+function startGame(resetPersistent=true){
+  menu.style.display = 'none';
+  settingsPanel.style.display = 'none';
+  paused = false;
   gameStarted = true;
   gameOver = false;
-  paused = false;
-  menuElem.style.display='none';
-  document.getElementById('gameover').style.display='none';
-  // if demo: small score seed
-  if(demo){ score = 500; xp += 10; }
-  // reset player lives but persist level/xp if user wanted to keep
-  player.x = canvas.width/2; player.y = canvas.height - 110;
-  player.lives = 100; player.shield = false;
-  bullets.length = 0; enemies.length = 0; powerUps.length = 0;
-  updateHUD();
-  // ensure spawner rate is correct for difficulty
-  refreshSpawner();
+  // reset but keep persistent if false
+  resetGame(!resetPersistent);
+  applyDifficulty();
+  updateUI();
 }
 
-/* -------------------------
-   Pause handling (improved)
-   ------------------------- */
-function togglePause(state){
-  paused = (typeof state === 'boolean') ? state : !paused;
+/* Toggle Pause - improved overlay + blur effect */
+function togglePause(){
+  if(!gameStarted || gameOver) return;
+  paused = !paused;
   pauseOverlay.style.display = paused ? 'flex' : 'none';
-  // small visual effect: dim canvas via drawing loop (handled in draw)
+  // subtle canvas dim by drawing overlay in draw()
 }
 
-/* -------------------------
-   Input handling
-   ------------------------- */
-const keys = {};
-addEventListener('keydown', e => {
-  if(e.key===' '){ e.preventDefault(); if(gameStarted && !paused && !gameOver){ fire(); } }
-  if(e.key==='p' || e.key==='P'){ togglePause(); }
-  keys[e.key] = true;
-});
-addEventListener('keyup', e => { keys[e.key] = false; });
-
-/* -------------------------
-   Game update loop
-   ------------------------- */
-function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
-
+/* Update logic (dt in ms) */
 function update(dt){
-  if(!gameStarted || gameOver || paused) return;
-
-  // movement
-  if(keys['ArrowLeft'] || keys['a']) player.x -= player.speed;
-  if(keys['ArrowRight'] || keys['d']) player.x += player.speed;
-  if(keys['ArrowUp'] || keys['w']) player.y -= player.speed;
-  if(keys['ArrowDown'] || keys['s']) player.y += player.speed;
-  // clamp
+  // player move
+  if(pressed['ArrowLeft'] || pressed['a']) player.x -= player.speed;
+  if(pressed['ArrowRight'] || pressed['d']) player.x += player.speed;
+  if(pressed['ArrowUp'] || pressed['w']) player.y -= player.speed;
+  if(pressed['ArrowDown'] || pressed['s']) player.y += player.speed;
   player.x = clamp(player.x, player.width/2, canvas.width - player.width/2);
   player.y = clamp(player.y, player.height/2, canvas.height - player.height/2);
 
   // bullets
   for(let i=bullets.length-1;i>=0;i--){
-    const b = bullets[i];
-    b.y -= b.speed;
-    if(b.y + b.h < 0) bullets.splice(i,1);
+    bullets[i].y -= 600 * (dt/1000); // speed independent of fps
+    if(bullets[i].y < -50) bullets.splice(i,1);
   }
 
   // enemies
   for(let i=enemies.length-1;i>=0;i--){
     const e = enemies[i];
-    e.y += 1.2 + (enemyHP/60) * 0.8; // scale a bit with HP (gentle)
-    // collision bullet <-> enemy
+    e.y += diff.enemySpeed * (dt/16); // scale movement
+    if(e.y > canvas.height + 50){ enemies.splice(i,1); continue; }
+    // coll bullets
     for(let j=bullets.length-1;j>=0;j--){
       const b = bullets[j];
-      if(b.x < e.x + e.width && b.x + b.w > e.x && b.y < e.y + e.height && b.y + b.h > e.y){
-        // hit
+      if(rectIntersect(b, e)){
         bullets.splice(j,1);
         e.hp -= 20;
-        e.flash = 6; // frames to flash for hit effect
-        soundHit();
+        e.hitFlash = 8;
+        playSound(audio.hit);
+        spawnExplosion(e.x + e.width/2, e.y + e.height/2, '#ffcc66');
         if(e.hp <= 0){
-          // death effects
           score += 100;
           kills++;
           xp += 20;
           if(score >= 1000) xp += 30;
-          // level up check
-          if(xp >= xpGoal){ level++; xp -= xpGoal; xpGoal = Math.floor(xpGoal * 1.5); soundLevelUp(); }
+          if(score > highScore){ highScore = score; localSave(); }
           enemies.splice(i,1);
+          playSound(audio.level); // little reward tone for kill (keeps it snappy)
         }
         break;
       }
     }
-    // collides with player
-    if(!player.shield && player.x - player.width/2 < e.x + e.width && player.x + player.width/2 > e.x && player.y - player.height/2 < e.y + e.height && player.y + player.height/2 > e.y){
+    if(rectIntersect(e, player) && !player.shield){
+      // collide
       enemies.splice(i,1);
       player.lives -= 20;
-      soundDamage();
+      playSound(audio.damage);
+      spawnExplosion(player.x, player.y, '#ff6b6b');
       if(player.lives <= 0){
-        // game over
         gameOver = true; gameStarted = false;
-        document.getElementById('finalScore').innerText = score;
-        document.getElementById('gameover').style.display = 'flex';
-        if(score > highScore){ highScore = score; localStorage.setItem('fs_high', highScore); }
+        document.getElementById('gameover').style.display = 'block';
       }
     }
-    if(e.y > canvas.height + 100) enemies.splice(i,1);
   }
 
   // powerups
   for(let i=powerUps.length-1;i>=0;i--){
     const p = powerUps[i];
-    p.y += 1.2;
-    p.pulse += 0.06;
-    if(player.x - player.width/2 < p.x + p.size && player.x + player.width/2 > p.x && player.y - player.height/2 < p.y + p.size && player.y + player.height/2 > p.y){
-      if(p.type === 'life'){ player.lives = Math.min(player.maxLives, player.lives + 20); soundPickup(); }
-      else { player.shield = true; shieldTimer = 600; soundPickup(); }
+    p.y += 1.6 * (dt/16);
+    p.pulse += 0.06 * (dt/16);
+    if(rectIntersect({x:player.x-player.width/2,y:player.y-player.height/2,width:player.width,height:player.height}, {x:p.x,y:p.y,width:p.size,height:p.size})){
+      if(p.type === 'life'){ player.lives = Math.min(player.lives + 20, player.maxLives); }
+      else if(p.type === 'shield'){ player.shield = true; shieldTimer = 600; }
+      playSound(audio.pickup);
       powerUps.splice(i,1);
     }
-    if(p.y > canvas.height + 40) powerUps.splice(i,1);
+    if(p.y > canvas.height + 30) powerUps.splice(i,1);
   }
 
   // shield timer
-  if(player.shield){ shieldTimer--; if(shieldTimer <= 0) player.shield = false; }
+  if(player.shield){
+    shieldTimer -= (dt/16);
+    if(shieldTimer <= 0){ player.shield = false; shieldTimer = 0; }
+  }
 
-  // persist XP & level & xpGoal & HS
-  localStorage.setItem('fs_level', level);
-  localStorage.setItem('fs_xp', xp);
-  localStorage.setItem('fs_xpGoal', xpGoal);
-  localStorage.setItem('fs_high', highScore);
+  // explosions animate
+  for(let i=explosions.length-1;i>=0;i--){
+    const ex = explosions[i];
+    ex.t++;
+    if(ex.t > ex.ttl) explosions.splice(i,1);
+  }
+
+  // level up
+  if(xp >= xpGoal){
+    level++;
+    xp -= xpGoal;
+    xpGoal = Math.floor(xpGoal * 1.5);
+    playSound(audio.level); // level-up sound
+  }
+
+  // spawn caps
+  if(enemies.length < diff.enemyMax){
+    // spawn handled by interval timers outside update loop
+  }
+
+  updateUI();
+  localSave();
 }
 
-/* -------------------------
-   Drawing
-   ------------------------- */
-function draw(){
-  // clear
+/* Rect intersection helper */
+function rectIntersect(a,b){
+  return !(a.x + (a.width||0) < b.x || a.x > b.x + (b.width||b.size) ||
+           a.y + (a.height||0) < b.y || a.y > b.y + (b.height||b.size));
+}
+
+/* Fire bullet helper (with sprite) */
+function fireBullet(){
+  const bW = Math.max(10, Math.floor(player.width / 3));
+  const bH = Math.max(14, Math.floor(player.height / 3));
+  bullets.push({x:player.x - bW/2, y:player.y - player.height/2 - 6, width: bW, height: bH, sprite: bulletSprite});
+  playSound(audio.shoot);
+}
+
+/* spawn powerup */
+function spawnPowerUp(){
+  if(powerUps.length >= diff.enemyMax) return;
+  const size = 20;
+  const x = Math.random()*(canvas.width - size);
+  const type = Math.random() < 0.5 ? 'life' : 'shield';
+  powerUps.push({x, y: -size, size, type, pulse: Math.random()*Math.PI*2});
+}
+
+/* draw background & HUD & game objects */
+function drawBackground(){
+  const t = performance.now()/1000;
+  // gradient background based on theme
+  const th = themes[theme] || themes.darkmetal;
+  document.body.style.background = `radial-gradient(circle at 20% 10%, ${th.bg1}, ${th.bg2})`;
+  // subtle stars drawing
   ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  // background: gradient + subtle stars
-  const g = ctx.createLinearGradient(0,0,0,canvas.height);
-  g.addColorStop(0,'#071025');
-  g.addColorStop(1,'#000814');
-  ctx.fillStyle = g; ctx.fillRect(0,0,canvas.width,canvas.height);
-
-  // subtle moving lines for depth (parallax)
-  for(let i=0;i<8;i++){
-    ctx.globalAlpha = 0.03 + (i%2)*0.02;
-    ctx.fillStyle = i%2===0 ? '#08303a' : '#06202a';
-    ctx.fillRect((i*120 + (performance.now()/80))%canvas.width - 40, i*70, 3, canvas.height);
+  // decorative lines
+  for(let i=0;i<6;i++){
+    ctx.strokeStyle = `rgba(255,255,255,${0.02 + i*0.01})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    const y = (i/6) * canvas.height + (t*10 % 30);
+    ctx.moveTo(0,y); ctx.lineTo(canvas.width, y+ (Math.sin(t + i) * 20));
+    ctx.stroke();
   }
-  ctx.globalAlpha = 1;
+}
 
-  // HUD right top (we also update DOM fields)
-  hudScore.innerText = score;
-  hudLevel.innerText = level;
-  hudHS.innerText = highScore;
+/* draw everything */
+function draw(){
+  drawBackground();
 
-  // draw player sprite centered
-  const pw = player.width, ph = player.height;
-  // shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
-  ctx.fillRect(player.x - pw/2 + 4, player.y - ph/2 + 8, pw, ph);
-  // draw image when ready
-  if(playerImg.complete) ctx.drawImage(playerImg, player.x - pw/2, player.y - ph/2, pw, ph);
-  else { ctx.fillStyle = player.shield ? '#4aa3ff' : '#1de9b6'; ctx.fillRect(player.x - pw/2, player.y - ph/2, pw, ph); }
-
-  // bullets (with small glow)
-  for(const b of bullets){
-    // glow
-    ctx.fillStyle = 'rgba(255,236,92,0.12)';
-    ctx.fillRect(b.x-4, b.y-6, b.w+8, b.h+12);
-    // sprite scaled
-    if(bulletImg.complete) ctx.drawImage(bulletImg, b.x, b.y, b.w, b.h);
-    else { ctx.fillStyle = '#ffec5c'; ctx.fillRect(b.x,b.y,b.w,b.h); }
-  }
-
-  // enemies: draw and HP bars with smooth decrease + flash effect
-  for(const e of enemies){
-    // flash
-    if(e.flash && e.flash>0){
-      ctx.globalAlpha = 0.85;
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(e.x-2, e.y-2, e.width+4, e.height+4);
-      ctx.globalAlpha = 1;
-      e.flash--;
-    }
-    // draw sprite scaled
-    if(enemyImg.complete){
-      ctx.drawImage(enemyImg, e.x, e.y, e.width, e.height);
-    } else {
-      ctx.fillStyle = e.color; ctx.fillRect(e.x,e.y,e.width,e.height);
-    }
-    // hp bar
-    const barW = e.width;
-    ctx.fillStyle = '#222'; ctx.fillRect(e.x, e.y - 8, barW, 6);
-    ctx.fillStyle = '#6eff9f'; ctx.fillRect(e.x, e.y - 8, barW * (e.hp / e.maxHp), 6);
-    ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.strokeRect(e.x, e.y - 8, barW, 6);
-  }
-
-  // powerups (pulsing)
-  for(const p of powerUps){
-    const pulse = 1 + Math.sin(p.pulse) * 0.12;
-    ctx.save();
-    ctx.translate(p.x + p.size/2, p.y + p.size/2);
-    ctx.globalAlpha = 0.95;
-    if(p.type==='life'){ ctx.fillStyle = '#7cff8f'; ctx.beginPath(); ctx.arc(0,0,p.size/2 * pulse,0,Math.PI*2); ctx.fill(); }
-    else { ctx.fillStyle = '#72e0ff'; ctx.beginPath(); ctx.arc(0,0,p.size/2 * pulse,0,Math.PI*2); ctx.fill(); }
-    ctx.restore();
-  }
-
-  // bottom bars: HP and XP with gradient and details
-  const barW = Math.min(420, canvas.width * 0.44);
-  // HP
-  const hpX = 20, hpY = canvas.height - 80;
-  ctx.fillStyle = 'rgba(255,255,255,0.04)'; ctx.fillRect(hpX - 4, hpY - 6, barW + 8, 36);
-  const gHP = ctx.createLinearGradient(hpX, hpY, hpX + barW, hpY + 30);
-  gHP.addColorStop(0,'#ff5f57'); gHP.addColorStop(0.5,'#ffd56b'); gHP.addColorStop(1,'#7cff8f');
-  ctx.fillStyle = '#1b1f25'; ctx.fillRect(hpX, hpY, barW, 28);
-  ctx.fillStyle = gHP; ctx.fillRect(hpX, hpY, barW * (player.lives / player.maxLives), 28);
-  ctx.strokeStyle = 'rgba(255,255,255,0.08)'; ctx.lineWidth = 2; ctx.strokeRect(hpX, hpY, barW, 28);
-  ctx.fillStyle = '#e6f7ff'; ctx.font = '14px Arial'; ctx.textAlign = 'left';
-  ctx.fillText(`HP ${player.lives}/${player.maxLives}`, hpX + 10, hpY + 18);
-
-  // XP bar below HP
-  const xpY = hpY + 36;
-  ctx.fillStyle = '#1b1f25'; ctx.fillRect(hpX, xpY, barW, 16);
-  ctx.fillStyle = '#7da8ff'; ctx.fillRect(hpX, xpY, barW * (xp / xpGoal), 16);
-  ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.strokeRect(hpX, xpY, barW, 16);
-  ctx.fillStyle = '#cfe7ff'; ctx.font = '12px Arial';
-  ctx.fillText(`XP ${xp} / ${xpGoal}`, hpX + 10, xpY + 12);
-
-  // center small HUD tips
-  ctx.fillStyle = 'rgba(255,255,255,0.06)'; ctx.font = '12px Arial'; ctx.textAlign='center';
   if(!gameStarted && !gameOver){
-    ctx.fillText('Naciśnij Zagraj, aby rozpocząć — pauza: P — ustawienia: ⚙', canvas.width/2, canvas.height/2 + 80);
+    // draw menu hint overlay slightly
+    ctx.font = '18px Arial'; ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.textAlign = 'center';
+    ctx.fillText('Motyw: ' + (currentThemeName.innerText || 'Dark Metal'), canvas.width/2, canvas.height/2 + 120);
+    return;
   }
 
-  // pause overlay handled separately
+  // draw player (sprite scaled)
+  ctx.save();
+  // draw explosions under objects
+  for(const ex of explosions) drawExplosion(ex);
+
+  // bullets
+  for(const b of bullets){
+    if(b.sprite && b.sprite.complete){
+      const scale = Math.max(1, Math.floor(b.width / b.sprite.width * 1.0));
+      ctx.drawImage(b.sprite, b.x, b.y, b.width, b.height);
+    } else {
+      ctx.fillStyle = '#ffea4d'; ctx.fillRect(b.x,b.y,b.width,b.height);
+    }
+  }
+
+  // enemies
+  for(const e of enemies){
+    // hit flash
+    if(e.hitFlash && e.hitFlash > 0){
+      ctx.fillStyle = '#ffffff';
+      e.hitFlash--;
+    } else ctx.fillStyle = e.color;
+    ctx.fillRect(e.x, e.y, e.width, e.height);
+    // enemy HP bar w górze
+    ctx.fillStyle = '#222'; ctx.fillRect(e.x, e.y-6, e.width, 5);
+    ctx.fillStyle = '#7ef05a'; ctx.fillRect(e.x, e.y-6, e.width * (e.hp / e.maxHp), 5);
+    if(e.hitFlash && e.hitFlash > 0){
+      // small flash effect
+      ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(e.x, e.y, e.width, e.height);
+    }
+  }
+
+  // player (use rocket sprite scaled)
+  const rs = rocketSprite;
+  const rW = player.width, rH = player.height;
+  if(rs && rs.complete){
+    ctx.drawImage(rs, player.x - rW/2, player.y - rH/2, rW, rH);
+  } else {
+    ctx.fillStyle = player.shield ? '#5ad5ff' : '#7ef05a';
+    ctx.fillRect(player.x - player.width/2, player.y - player.height/2, player.width, player.height);
+  }
+
+  // powerups (animated)
+  for(const p of powerUps){
+    const sprite = p.type === 'life' ? hpSprite : shieldSprite;
+    const pulse = 1 + Math.sin(p.pulse) * 0.12;
+    const sW = p.size * pulse, sH = p.size * pulse;
+    if(sprite && sprite.complete){
+      ctx.drawImage(sprite, p.x - (sW - p.size)/2, p.y - (sH - p.size)/2, sW, sH);
+    } else {
+      ctx.fillStyle = p.type === 'life' ? '#7ef05a' : '#5ad5ff';
+      ctx.fillRect(p.x,p.y,p.size,p.size);
+    }
+  }
+
+  // draw explosions above
+  for(const ex of explosions) drawExplosion(ex);
+
+  ctx.restore();
+
+  // HUD (bottom: HP & XP bars)
+  const barW = 340;
+  const pad = 24;
+
+  // HP bar container
+  const bx = pad, by = canvas.height - 70;
+  ctx.fillStyle = 'rgba(255,255,255,0.03)';
+  roundRect(ctx, bx-4, by-6, barW+8, 46, 8, true, false);
+  // HP bar bg
+  ctx.fillStyle = '#222';
+  roundRect(ctx, bx, by, barW, 20, 6, true, false);
+  // HP gradient
+  const g = ctx.createLinearGradient(bx,by,bx+barW,by+20);
+  g.addColorStop(0,'#ff6b6b'); g.addColorStop(0.5,'#ffd166'); g.addColorStop(1,'#7ef05a');
+  ctx.fillStyle = g;
+  roundRect(ctx, bx, by, (player.lives/player.maxLives)*barW, 20, 6, true, false);
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  roundRect(ctx, bx, by, barW, 20, 6, false, true);
+
+  // XP bar under HP
+  const by2 = by + 26;
+  ctx.fillStyle = '#222';
+  roundRect(ctx, bx, by2, barW, 12, 6, true, false);
+  ctx.fillStyle = '#4cc9f0';
+  roundRect(ctx, bx, by2, (xp/xpGoal)*barW, 12, 6, true, false);
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  roundRect(ctx, bx, by2, barW, 12, 6, false, true);
+
+  // Text over HUD
+  ctx.font = '14px Inter, Arial';
+  ctx.fillStyle = '#cfeff6';
+  ctx.textAlign = 'left';
+  ctx.fillText('HP', bx, by - 8);
+  ctx.fillText(`XP: ${xp}/${xpGoal}`, bx + barW - 110, by2 + 10);
+
+  // top-right stats (draw nicer)
+  ctx.textAlign = 'right';
+  const trx = canvas.width - 20;
+  ctx.font = '20px Inter, Arial';
+  // gradient title
+  const grad = ctx.createLinearGradient(trx-220,10, trx, 10);
+  grad.addColorStop(0, themes[theme].accent || '#7ad1ff');
+  grad.addColorStop(1, '#ff7ad1');
+  ctx.fillStyle = grad;
+  ctx.fillText(`Punkty: ${score}`, trx, 32);
+  ctx.fillStyle = '#dbeafe';
+  ctx.fillText(`Poziom: ${level}`, trx, 60);
+  ctx.fillStyle = '#f0f7ff';
+  ctx.fillText(`High: ${highScore}`, trx, 92);
+
+  // Pause overlay if paused
+  if(paused){
+    ctx.fillStyle = 'rgba(2,6,23,0.45)';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.font = '56px Inter, Arial'; ctx.fillStyle = 'white'; ctx.textAlign = 'center';
+    ctx.fillText('PAUZA', canvas.width/2, canvas.height/2);
+  }
 }
 
-/* -------------------------
-   Level up sound wrapper
-   ------------------------- */
-function soundLevelUp(){ playTone(880,'sine',0.12,0.15); playTone(660,'sine',0.12,0.12); }
-
-/* -------------------------
-   game loop
-   ------------------------- */
-let last = performance.now();
-function frame(now){
-  const dt = now - last;
-  last = now;
-  update(dt);
-  draw();
-  requestAnimationFrame(frame);
+/* draw single explosion frame */
+function drawExplosion(ex){
+  const t = ex.t / ex.ttl;
+  const r = t * 40 + 8;
+  const alpha = 1 - t;
+  ctx.beginPath();
+  ctx.fillStyle = hexToRgba(ex.color, 0.9 * alpha);
+  ctx.arc(ex.x, ex.y, r, 0, Math.PI*2);
+  ctx.fill();
 }
-requestAnimationFrame(frame);
 
-/* -------------------------
-   Spawn intervals and UI updates
-   ------------------------- */
-setInterval(()=>{ if(gameStarted && !paused && !gameOver) spawnEnemy(); }, spawnRate);
-setInterval(()=>{ if(gameStarted && !paused && !gameOver) spawnPowerup(); }, 15000);
+/* spawn helper for explosion usage elsewhere */
+function createExplosionAt(x,y){
+  const color = '#ffcc66';
+  explosions.push({x,y,t:0,ttl:30,color});
+}
 
-function updateHUD(){ document.getElementById('hudScore').innerText=score; document.getElementById('hudLevel').innerText=level; document.getElementById('hudHS').innerText=highScore; }
+/* rounded rect helper */
+function roundRect(ctx,x,y,w,h,r,fill,stroke){
+  if(typeof r === 'undefined') r = 5;
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+  if(fill) ctx.fill();
+  if(stroke) ctx.stroke();
+}
 
-/* expose some functions to console for debugging if needed */
-window._FS = { spawnEnemy, spawnPowerup, startGame, togglePause };
+/* small util */
+function hexToRgba(hex,alpha=1){
+  const c = hex.replace('#','');
+  const r = parseInt(c.substring(0,2),16);
+  const g = parseInt(c.substring(2,4),16);
+  const b = parseInt(c.substring(4,6),16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
 
+/* Fire control - space bar shoots, but also support mouse click */
+document.addEventListener('keydown', (e)=>{
+  if(e.key === ' '){ // prevent page scroll
+    e.preventDefault();
+    if(gameStarted && !paused && !gameOver) fireBullet();
+  }
+});
+canvas.addEventListener('mousedown', (e) => {
+  if(gameStarted && !paused && !gameOver) fireBullet();
+});
+
+/* fire bullet using sprite */
+function fireBullet(){
+  const bW = Math.max(12, Math.floor(player.width / 3));
+  const bH = Math.max(18, Math.floor(player.height / 3));
+  bullets.push({x:player.x - bW/2, y:player.y - player.height/2 - 6, width: bW, height: bH, sprite: bulletSprite});
+  playSound(audio.shoot);
+}
+
+/* small interval spawners - use timers (not setInterval heavy loops) */
+setInterval(()=>{ if(gameStarted && !paused && !gameOver){ if(enemies.length < diff.enemyMax) spawnEnemy(); } }, 500);
+setInterval(()=>{ if(gameStarted && !paused && !gameOver){ if(powerUps.length < 2) spawnPowerUp(); } }, 4000);
+
+/* Persist and UI sync on load */
+function updateTheme(){
+  const th = themes[theme] || themes.darkmetal;
+  document.documentElement.style.setProperty('--bg1', th.bg1);
+  document.documentElement.style.setProperty('--bg2', th.bg2);
+  document.documentElement.style.setProperty('--accent', th.accent || '#7ad1ff');
+  updateUI();
+}
+updateTheme();
+
+/* helper: playSound wrapper that respects mute UI */
+function playSound(sound){
+  if(isMuted) return;
+  try{ sound.currentTime=0; sound.play(); }catch(e){}
+}
+
+/* initial UI values */
+updateUI();
+
+/* helper to toggle pause from UI */
+function togglePauseFromUI(){
+  if(!gameStarted) return;
+  togglePause();
+}
+
+/* small keyboard to UI map for quick difficulty toggle */
+startHardBtn.addEventListener('click', ()=>{ difficultySelect.value='hard'; applyDifficulty(); startGame(); });
+
+/* make sure UI controls close properly */
+closeSettingsBtn.onclick = ()=>{ settingsPanel.style.display='none'; };
+
+/* more buttons */
+document.getElementById('restartBtn2').onclick = ()=>{
+  resetGame(false);
+  gameOver=false; gameStarted=true;
+  document.getElementById('gameover').style.display='none';
+};
+
+/* ensure menu start uses selected difficulty & theme */
+startBtn.onclick = ()=>{
+  difficulty = difficultySelect.value;
+  applyDifficulty();
+  startGame(true);
+};
+
+/* bind pause overlay resume */
+resumeBtn.onclick = ()=>{ togglePause(); };
+
+/* utility to apply settings & save */
+function applySettings(){
+  theme = themeSelect.value;
+  difficulty = difficultySelect.value;
+  isMuted = muteToggle.checked;
+  difficultySelect.value = difficulty;
+  themeSelect.value = theme;
+  muteToggle.checked = isMuted;
+  applyDifficulty();
+  updateTheme();
+  localSave();
+}
+closeSettingsBtn.addEventListener('click', ()=>{ applySettings(); settingsPanel.style.display='none'; });
+
+/* initial apply of difficulty/theme */
+applyDifficulty();
+updateTheme();
+
+/* final fix: ensure rocket and bullets visible sizes (done above) */
+
+/* END of main code */
 </script>
 </body>
 </html>
