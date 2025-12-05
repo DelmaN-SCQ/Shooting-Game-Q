@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Neo Blaster — Pro (stable)</title>
+<title>Neo Blaster — Pro Level</title>
 <style>
 :root{
   --bg1:#071025; --bg2:#000814; --accent:#1de9b6; --accent2:#66fcf1;
@@ -44,6 +44,7 @@ footer{position:fixed;left:0;right:0;bottom:8px;text-align:center;color:rgba(230
 <div id="hudCluster">
   <div class="hudBox"><p class="hudTitle">Punkty</p><p id="hudScore" class="hudValue">0</p></div>
   <div class="hudBox"><p class="hudTitle">Poziom</p><p id="hudLevel" class="hudValue">1</p></div>
+  <div class="hudBox"><p class="hudTitle">XP</p><p id="hudXP" class="hudValue">0/100</p></div>
   <div class="hudBox"><p class="hudTitle">High Score</p><p id="hudHS" class="hudValue">0</p></div>
 </div>
 
@@ -115,15 +116,6 @@ let gameStarted=false, gameOver=false, paused=false;
 let score=0, kills=0;
 const maxEnemies=10, maxPowerUps=2;
 let spawnRate=1200, enemyHP=40;
-let shieldTimer=0;
-
-const difficultySelect=document.getElementById('difficulty');
-function applyDifficulty(mode){
-  if(mode==='easy'){ spawnRate=1600; enemyHP=30; }
-  else if(mode==='normal'){ spawnRate=1200; enemyHP=40; }
-  else{ spawnRate=900; enemyHP=55; }
-}
-applyDifficulty(difficultySelect.value);
 
 // -------------------------
 // Sprites
@@ -169,18 +161,8 @@ const audioCtx=new (window.AudioContext||window.webkitAudioContext)();
 let soundOn=true;
 const masterGain=audioCtx.createGain(); masterGain.gain.value=0.9; masterGain.connect(audioCtx.destination);
 const volSlider=document.getElementById('vol');
-volSlider.oninput=()=>{ masterGain.gain.value=parseFloat(volSlider.value); };
-
-// Simple synth
-function playTone(freq,type='sine',time=0.06,gain=0.12){
-  if(!soundOn) return;
-  const t0=audioCtx.currentTime;
-  const o=audioCtx.createOscillator(); const g=audioCtx.createGain();
-  o.type=type; o.frequency.setValueAtTime(freq,t0);
-  g.gain.setValueAtTime(gain,t0);
-  o.connect(g); g.connect(masterGain);
-  o.start(t0); o.stop(t0+time);
-}
+volSlider.oninput=()=>{ masterGain.gain=parseFloat(volSlider.value); };
+function playTone(freq,type='sine',time=0.06,gain=0.12){ if(!soundOn) return; const t0=audioCtx.currentTime; const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type=type; o.frequency.setValueAtTime(freq,t0); g.gain.setValueAtTime(gain,t0); o.connect(g); g.connect(masterGain); o.start(t0); o.stop(t0+time); }
 function soundShoot(){ playTone(1200,'sawtooth',0.05,0.06); }
 function soundHit(){ playTone(600,'triangle',0.08,0.08); }
 function soundDamage(){ playTone(220,'sawtooth',0.18,0.14); }
@@ -188,44 +170,14 @@ function soundPickup(){ playTone(1400,'sine',0.12,0.08); }
 function soundLevelUp(){ [520,660,780].forEach((f,i)=>{ const o=audioCtx.createOscillator(); const g=audioCtx.createGain(); o.type='sine'; o.frequency.setValueAtTime(f,audioCtx.currentTime); g.gain.setValueAtTime(0.08/(i+1),audioCtx.currentTime); o.connect(g); g.connect(masterGain); o.start(audioCtx.currentTime+i*0.02); o.stop(audioCtx.currentTime+0.4+i*0.02); }); }
 
 // -------------------------
-// UI elements
+// HUD
 // -------------------------
 const hudScore=document.getElementById('hudScore');
 const hudLevel=document.getElementById('hudLevel');
+const hudXP=document.getElementById('hudXP');
 const hudHS=document.getElementById('hudHS');
-const playBtn=document.getElementById('playBtn');
-const playDemoBtn=document.getElementById('playDemo');
-const menuElem=document.getElementById('menu');
-const pauseOverlay=document.getElementById('pauseOverlay');
-const settingsToggle=document.getElementById('settingsToggle');
-const settingsPanel=document.getElementById('settingsPanel');
-const closeSettings=document.getElementById('closeSettings');
-const soundToggle=document.getElementById('soundToggle');
-const resetProgress=document.getElementById('resetProgress');
-const resumeBtn=document.getElementById('resumeBtn');
-const pauseMenuBtn=document.getElementById('pauseMenuBtn');
-const restartBtnMain=document.getElementById('restartBtnMain');
-const menuBtnMain=document.getElementById('menuBtnMain');
-
-// -------------------------
-// Button handlers
-// -------------------------
-playBtn.onclick=startGame;
-playDemoBtn.onclick=()=>{ startGame(true); };
-resumeBtn.onclick=()=>{ togglePause(false); };
-pauseMenuBtn.onclick=()=>{ togglePause(false); menuElem.style.display='flex'; gameOver=false; gameStarted=false; };
-restartBtnMain.onclick=()=>{ startGame(); document.getElementById('gameover').style.display='none'; };
-menuBtnMain.onclick=()=>{ document.getElementById('gameover').style.display='none'; menuElem.style.display='flex'; gameStarted=false; gameOver=false; };
-settingsToggle.onclick=()=>{ settingsPanel.style.display=settingsPanel.style.display==='block'?'none':'block'; };
-closeSettings.onclick=()=>{ settingsPanel.style.display='none'; };
-soundToggle.onchange=()=>{ soundOn=soundToggle.checked; masterGain.gain=soundOn?parseFloat(volSlider.value):0; };
-difficultySelect.onchange=()=>{ applyDifficulty(difficultySelect.value); refreshSpawner(); };
-resetProgress.onclick=()=>{
-  if(confirm('Czy na pewno zresetować poziom/XP/high score?')) {
-    level=1; xp=0; xpGoal=100; highScore=0;
-    localStorage.clear(); updateHUD();
-  }
-};
+function updateHUD(){ hudScore.textContent=score; hudLevel.textContent=level; hudXP.textContent=`${xp}/${xpGoal}`; hudHS.textContent=highScore; }
+updateHUD();
 
 // -------------------------
 // Input
@@ -239,36 +191,82 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>{ keys[e.key]=false; });
 
 // -------------------------
-// Spawn functions
+// Collisions
 // -------------------------
-function spawnEnemy(){
-  if(enemies.length>=maxEnemies) return;
-  const size=36+Math.floor(Math.random()*26);
-  const x=Math.random()*(canvas.width-size);
-  const color=['#ff6b6b','#ffb86b','#b86bff','#6bd9ff'][Math.floor(Math.random()*4)];
-  enemies.push({ x,y:-size,width:size,height:size,hp:enemyHP,maxHp:enemyHP,color,flash:0 });
-}
-function spawnPowerup(){
-  if(powerUps.length>=maxPowerUps) return;
-  const size=20; const x=Math.random()*(canvas.width-size);
-  const type=Math.random()<0.5?'life':'shield';
-  powerUps.push({ x,y:-size,size,type,pulse:Math.random()*Math.PI*2 });
-}
+function rectIntersect(a,b){ return !(a.x+a.width<b.x || a.x>b.x+b.width || a.y+a.height<b.y || a.y>b.y+b.height); }
+
+// -------------------------
+// Fire
+// -------------------------
+function fire(){ bullets.push({ x:player.x+player.width/2-4, y:player.y-16, width:8,height:16,speed:14 }); soundShoot(); }
+
+// -------------------------
+// Spawn
+// -------------------------
+function spawnEnemy(){ if(enemies.length>=maxEnemies) return; const size=36+Math.floor(Math.random()*26); const x=Math.random()*(canvas.width-size); enemies.push({ x,y:-size,width:size,height:size,hp:enemyHP,maxHp:enemyHP }); }
+function spawnPowerup(){ if(powerUps.length>=maxPowerUps) return; const size=20; const x=Math.random()*(canvas.width-size); const type=Math.random()<0.5?'life':'shield'; powerUps.push({ x,y:-size,size,type,pulse:Math.random()*Math.PI*2 }); }
 let enemySpawner, powerSpawner;
-function refreshSpawner(){
-  clearInterval(enemySpawner); clearInterval(powerSpawner);
-  enemySpawner=setInterval(()=>{ if(gameStarted && !paused && !gameOver) spawnEnemy(); }, spawnRate);
-  powerSpawner=setInterval(()=>{ if(gameStarted && !paused && !gameOver) spawnPowerup(); },15000);
+function refreshSpawner(){ clearInterval(enemySpawner); clearInterval(powerSpawner); enemySpawner=setInterval(()=>{ if(gameStarted && !paused && !gameOver) spawnEnemy(); }, spawnRate); powerSpawner=setInterval(()=>{ if(gameStarted && !paused && !gameOver) spawnPowerup(); },15000); }
+
+// -------------------------
+// Game loop
+// -------------------------
+function gameLoop(){
+  if(!gameStarted || paused) return requestAnimationFrame(gameLoop);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // Move player
+  if(keys['ArrowLeft'] && player.x>0) player.x-=player.speed;
+  if(keys['ArrowRight'] && player.x+player.width<canvas.width) player.x+=player.speed;
+  if(keys['ArrowUp'] && player.y>0) player.y-=player.speed;
+  if(keys['ArrowDown'] && player.y+player.height<canvas.height) player.y+=player.speed;
+  ctx.drawImage(playerImg,player.x,player.y,player.width,player.height);
+  // Bullets
+  for(let i=bullets.length-1;i>=0;i--){
+    const b=bullets[i]; b.y-=b.speed; ctx.drawImage(bulletImg,b.x,b.y,b.width,b.height);
+    if(b.y<-20) bullets.splice(i,1);
+    else for(let j=enemies.length-1;j>=0;j--){
+      const e=enemies[j];
+      if(rectIntersect(b,e)){ e.hp--; bullets.splice(i,1); soundHit();
+        if(e.hp<=0){ enemies.splice(j,1); score+=10; kills++; xp+=20; checkLevelUp(); updateHUD(); soundLevelUp(); } break;
+      }
+    }
+  }
+  // Enemies
+  for(let i=enemies.length-1;i>=0;i--){
+    const e=enemies[i]; e.y+=2; ctx.drawImage(enemyImg,e.x,e.y,e.width,e.height);
+    if(e.y>canvas.height) enemies.splice(i,1);
+    if(rectIntersect(e,player) && !player.shield){ player.lives-=20; enemies.splice(i,1); soundDamage(); if(player.lives<=0) return endGame(); }
+  }
+  // Powerups
+  for(let i=powerUps.length-1;i>=0;i--){
+    const p=powerUps[i]; p.y+=1.5; p.pulse+=0.06;
+    ctx.fillStyle=p.type==='life'?'#ff6b6b':'#66fcf1';
+    ctx.beginPath(); ctx.arc(p.x+10,p.y+10,10+Math.sin(p.pulse)*3,0,Math.PI*2); ctx.fill();
+    if(p.y>canvas.height) powerUps.splice(i,1);
+    else if(rectIntersect(p,player)){ if(p.type==='life') player.lives=Math.min(player.maxLives,player.lives+30); if(p.type==='shield'){ player.shield=true; setTimeout(()=>player.shield=false,6000); } powerUps.splice(i,1); soundPickup(); }
+  }
+  updateHUD();
+  requestAnimationFrame(gameLoop);
 }
 
 // -------------------------
-// Game functions
+// Level system
 // -------------------------
-function fire(){ bullets.push({ x:player.x+player.width/2-4, y:player.y-16, width:8,height:16,speed:14 }); soundShoot(); }
-function togglePause(force){
-  paused=force!==undefined?force:!paused;
-  pauseOverlay.style.display=paused?'flex':'none';
+function checkLevelUp(){
+  while(xp>=xpGoal){
+    xp-=xpGoal; level++; xpGoal=Math.floor(xpGoal*1.25);
+    localStorage.setItem('fs_level',level); localStorage.setItem('fs_xp',xp); localStorage.setItem('fs_xpGoal',xpGoal); soundLevelUp();
+  }
+  localStorage.setItem('fs_xp',xp);
+  localStorage.setItem('fs_xpGoal',xpGoal);
 }
+
+// -------------------------
+// Menu & control
+// -------------------------
+const menuElem=document.getElementById('menu');
+const pauseOverlay=document.getElementById('pauseOverlay');
+function togglePause(force){ paused=force!==undefined?force:!paused; pauseOverlay.style.display=paused?'flex':'none'; if(!paused) requestAnimationFrame(gameLoop); }
 function startGame(demo=false){
   gameStarted=true; gameOver=false; score=0; kills=0;
   player.x=canvas.width/2; player.y=canvas.height-110; player.lives=player.maxLives; player.shield=false;
@@ -286,73 +284,17 @@ function endGame(){
 }
 
 // -------------------------
-// HUD
+// Buttons
 // -------------------------
-function updateHUD(){
-  hudScore.textContent=score;
-  hudLevel.textContent=level;
-  hudHS.textContent=highScore;
-}
-updateHUD();
-
-// -------------------------
-// Collision
-// -------------------------
-function rectIntersect(a,b){ return a.x<a.x+b.width && a.x+b.width>a.x && a.y<a.y+b.height && a.y+b.height>a.y; }
-
-// -------------------------
-// Game loop
-// -------------------------
-function gameLoop(){
-  if(!gameStarted || paused) return requestAnimationFrame(gameLoop);
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  // Move player
-  if(keys['ArrowLeft'] && player.x>0) player.x-=player.speed;
-  if(keys['ArrowRight'] && player.x+player.width<canvas.width) player.x+=player.speed;
-  if(keys['ArrowUp'] && player.y>0) player.y-=player.speed;
-  if(keys['ArrowDown'] && player.y+player.height<canvas.height) player.y+=player.speed;
-  // Draw player
-  ctx.drawImage(playerImg,player.x,player.y,player.width,player.height);
-  // Bullets
-  for(let i=bullets.length-1;i>=0;i--){
-    const b=bullets[i]; b.y-=b.speed;
-    ctx.drawImage(bulletImg,b.x,b.y,b.width,b.height);
-    if(b.y<-20) bullets.splice(i,1);
-    // Collision with enemies
-    for(let j=enemies.length-1;j>=0;j--){
-      const e=enemies[j];
-      if(rectIntersect(b,e)){
-        e.hp--; bullets.splice(i,1); soundHit();
-        if(e.hp<=0){ enemies.splice(j,1); score+=10; kills++; updateHUD(); soundLevelUp(); }
-        break;
-      }
-    }
-  }
-  // Enemies
-  for(let i=enemies.length-1;i>=0;i--){
-    const e=enemies[i]; e.y+=2; ctx.drawImage(enemyImg,e.x,e.y,e.width,e.height);
-    if(e.y>canvas.height) enemies.splice(i,1);
-    if(rectIntersect(e,player) && !player.shield){
-      player.lives-=20; enemies.splice(i,1); soundDamage();
-      if(player.lives<=0) return endGame();
-    }
-  }
-  // Powerups
-  for(let i=powerUps.length-1;i>=0;i--){
-    const p=powerUps[i]; p.y+=1.5; p.pulse+=0.06;
-    ctx.fillStyle=p.type==='life'?'#ff6b6b':'#66fcf1';
-    ctx.beginPath(); ctx.arc(p.x+10,p.y+10,10+Math.sin(p.pulse)*3,0,Math.PI*2); ctx.fill();
-    if(p.y>canvas.height) powerUps.splice(i,1);
-    if(rectIntersect(p,player)){
-      if(p.type==='life') player.lives=Math.min(player.maxLives,player.lives+30);
-      if(p.type==='shield'){ player.shield=true; setTimeout(()=>player.shield=false,6000); }
-      powerUps.splice(i,1); soundPickup();
-    }
-  }
-  requestAnimationFrame(gameLoop);
-  updateHUD();
-}
+document.getElementById('playBtn').onclick=()=>startGame();
+document.getElementById('playDemo').onclick=()=>startGame(true);
+document.getElementById('resumeBtn').onclick=()=>togglePause(false);
+document.getElementById('pauseMenuBtn').onclick=()=>{ togglePause(false); menuElem.style.display='flex'; };
+document.getElementById('restartBtnMain').onclick=()=>startGame();
+document.getElementById('menuBtnMain').onclick=()=>{ document.getElementById('gameover').style.display='none'; menuElem.style.display='flex'; };
+document.getElementById('settingsToggle').onclick=()=>{ const p=document.getElementById('settingsPanel'); p.style.display=p.style.display==='block'?'none':'block'; };
+document.getElementById('closeSettings').onclick=()=>document.getElementById('settingsPanel').style.display='none';
+document.getElementById('soundToggle').onchange=e=>soundOn=e.target.checked;
+document.getElementById('resetProgress').onclick=()=>{ if(confirm('Na pewno chcesz zresetować poziomy i XP?')){ localStorage.clear(); level=1; xp=0; xpGoal=100; updateHUD(); } };
 </script>
 
-</body>
-</html>
