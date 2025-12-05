@@ -3,20 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Futuristic Shooter</title>
+<title>Futuristic Shooter Game Q</title>
 <style>
 body{margin:0;background:#0a0a0a;overflow:hidden;font-family:Arial;}
 canvas{display:block;}
-#menu,#gameover{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:white;text-align:center;}
-button{padding:12px 24px;font-size:18px;cursor:pointer;margin-top:10px;border:none;border-radius:8px;background:#111;color:white;}
-button:hover{background:#333;}
+#menu,#gameover{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:white;}
+button{padding:12px 24px;font-size:18px;margin-top:10px;border:none;border-radius:8px;background:#111;color:white;cursor:pointer;transition:0.3s;}
+button:hover{background:#333;box-shadow:0 0 10px #0ff;}
+#menu h1,#gameover h1{color:#0ff;text-shadow:0 0 10px #0ff;}
 </style>
 </head>
 <body>
 
 <div id="menu">
-<h1>Futuristic Shooter</h1>
-<p>Strzał: SPACJA | Ruch: Strzałki</p>
+<h1>Futuristic Shooter Game Q</h1>
+<p>Ruch: Strzałki | Strzał: SPACJA</p>
 <button id="startBtn">Start</button>
 </div>
 
@@ -49,7 +50,7 @@ document.addEventListener('keyup',e=>keys[e.key]=false);
 
 // --- Menu buttons ---
 document.getElementById('startBtn').onclick=()=>{gameStarted=true;gameOver=false;document.getElementById('menu').style.display='none';resetGame();};
-document.getElementById('restartBtn').onclick=()=>{gameOver=false;gameStarted=true;document.getElementById('gameover').style.display='none';resetGame();};
+document.getElementById('restartBtn').onclick=()=>{gameOver=false;gameStarted=true;document.getElementById('gameover').style.display='none';resetGame(false);};
 document.getElementById('menuBtn').onclick=()=>{gameOver=false;gameStarted=false;document.getElementById('gameover').style.display='none';document.getElementById('menu').style.display='block';};
 
 // --- Sounds ---
@@ -59,10 +60,11 @@ const pickupSound=new Audio('https://freesound.org/data/previews/331/331912_3248
 const damageSound=new Audio('https://freesound.org/data/previews/331/331912_3248244-lq.mp3');
 
 // --- Reset Game ---
-function resetGame(){
+function resetGame(resetXP=true){
     player.x=canvas.width/2; player.y=canvas.height-80; player.lives=100; player.shield=false;
     bullets.length=0; enemies.length=0; powerUps.length=0;
-    score=0; level=1; kills=0; xp=0; xpGoal=100; shieldTimer=0;
+    score=0; kills=0; shieldTimer=0;
+    if(resetXP){level=1; xp=0; xpGoal=100;}
 }
 
 // --- Shoot ---
@@ -151,22 +153,23 @@ function draw(){
     ctx.font='22px Arial'; ctx.textAlign='left';
 
     // Score
-    ctx.fillStyle='cyan'; ctx.fillText(`Punkty: ${score}`,20,30);
+    ctx.fillStyle='cyan'; ctx.fillText(`Punkty: ${score}`,canvas.width-200,30);
 
     // Level
-    ctx.fillStyle='magenta'; ctx.fillText(`Poziom: ${level}`,20,60);
+    ctx.fillStyle='magenta'; ctx.fillText(`Poziom: ${level}`,canvas.width-200,60);
 
-    // HP Bar
-    ctx.fillStyle='gray'; ctx.fillRect(20,80,200,20);
-    const hpGradient=ctx.createLinearGradient(20,80,220,100);
-    hpGradient.addColorStop(0,'red'); hpGradient.addColorStop(0.5,'yellow'); hpGradient.addColorStop(1,'lime');
-    ctx.fillStyle=hpGradient; ctx.fillRect(20,80,player.lives/100*200,20);
-    ctx.strokeStyle='white'; ctx.strokeRect(20,80,200,20);
+    // HP Bar (futurystyczny)
+    const barWidth=250;
+    ctx.fillStyle='#222'; ctx.fillRect(20,canvas.height-50,barWidth,25);
+    const hpGradient=ctx.createLinearGradient(20,canvas.height-50,20+barWidth,canvas.height-25);
+    hpGradient.addColorStop(0,'red'); hpGradient.addColorStop(0.5,'orange'); hpGradient.addColorStop(1,'lime');
+    ctx.fillStyle=hpGradient; ctx.fillRect(20,canvas.height-50,(player.lives/player.maxLives)*barWidth,25);
+    ctx.strokeStyle='white'; ctx.lineWidth=2; ctx.strokeRect(20,canvas.height-50,barWidth,25);
 
     // XP Bar
-    ctx.fillStyle='gray'; ctx.fillRect(20,110,200,15);
-    ctx.fillStyle='blue'; ctx.fillRect(20,110,(xp/xpGoal)*200,15);
-    ctx.strokeStyle='white'; ctx.strokeRect(20,110,200,15);
+    ctx.fillStyle='#222'; ctx.fillRect(20,canvas.height-25,barWidth,15);
+    ctx.fillStyle='blue'; ctx.fillRect(20,canvas.height-25,(xp/xpGoal)*barWidth,15);
+    ctx.strokeStyle='white'; ctx.strokeRect(20,canvas.height-25,barWidth,15);
 
     // Player
     ctx.fillStyle=player.shield?'blue':'green';
