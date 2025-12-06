@@ -24,13 +24,17 @@ canvas{display:block;width:100vw;height:100vh;}
 #settingsPanel{position:fixed;left:18px;top:60px;width:320px;max-width:calc(100vw-40px);z-index:60;display:none}
 .settingRow{display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.005));margin-bottom:8px;border:1px solid rgba(255,255,255,0.02)}
 .muted{color:var(--muted);font-size:13px}
+/* pause overlay */
+#pauseOverlay{position:fixed;left:0;top:0;right:0;bottom:0;display:none;align-items:center;justify-content:center;background:rgba(1,4,10,0.6);backdrop-filter:blur(4px);z-index:40}
+.pauseBox{border-radius:12px;padding:18px 26px;background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.02));text-align:center;border:1px solid rgba(255,255,255,0.04)}
+.pauseTitle{font-size:42px;color:var(--accent);margin:0 0 6px 0}
+/* gameover */
+#gameover{display:none;}
 </style>
 </head>
 <body>
-
 <canvas id="gameCanvas"></canvas>
 
-<!-- HUD left bottom -->
 <div id="hudCluster">
   <div class="hudBox"><p class="hudTitle">HP</p><p id="hudHP" class="hudValue">100</p></div>
   <div class="hudBox"><p class="hudTitle">XP</p><p id="hudXP" class="hudValue">0 / 100</p></div>
@@ -39,43 +43,39 @@ canvas{display:block;width:100vw;height:100vh;}
   <div class="hudBox"><p class="hudTitle">Najlepszy wynik</p><p id="hudHS" class="hudValue">0</p></div>
 </div>
 
-<!-- Settings toggle -->
 <button id="settingsToggle">⚙</button>
 <div id="settingsPanel" class="card">
   <h3 style="margin:0 0 8px 0;color:var(--accent)">Ustawienia</h3>
-  <div class="settingRow">
-    <div><div style="font-weight:700">Dźwięk</div><div class="muted">Włącz/Wyłącz efekty</div></div>
-    <div><input type="checkbox" id="soundToggle" checked></div>
-  </div>
-  <div class="settingRow">
-    <div><div style="font-weight:700">Głośność</div><div class="muted">Reguluje level efektów</div></div>
-    <div><input id="vol" type="range" min="0" max="1" step="0.01" value="0.9"></div>
-  </div>
-  <div class="settingRow">
-    <div><div style="font-weight:700">Trudność</div><div class="muted">Wybierz tryb</div></div>
-    <div>
-      <select id="difficulty">
-        <option value="easy">Easy</option>
-        <option value="normal" selected>Normal</option>
-        <option value="hard">Hard</option>
-      </select>
-    </div>
-  </div>
-  <div class="settingRow">
-    <div><div style="font-weight:700">Reset postępu</div></div>
-    <div><button id="resetProgress" class="btn small" style="background:#ff6b6b;color:white">Reset</button></div>
-  </div>
-  <div style="margin-top:8px;text-align:center">
-    <button id="closeSettings" class="btn small" style="background:linear-gradient(90deg,#66fcf1,#1de9b6)">Zamknij</button>
-  </div>
+  <div class="settingRow"><div><div style="font-weight:700">Dźwięk</div><div class="muted">Włącz/Wyłącz efekty</div></div><div><input type="checkbox" id="soundToggle" checked></div></div>
+  <div class="settingRow"><div><div style="font-weight:700">Głośność</div><div class="muted">Reguluje level efektów</div></div><div><input id="vol" type="range" min="0" max="1" step="0.01" value="0.9"></div></div>
+  <div class="settingRow"><div><div style="font-weight:700">Trudność</div><div class="muted">Wybierz tryb</div></div><div><select id="difficulty"><option value="easy">Easy</option><option value="normal" selected>Normal</option><option value="hard">Hard</option></select></div></div>
+  <div class="settingRow"><div><div style="font-weight:700">Reset postępu</div></div><div><button id="resetProgress" class="btn small" style="background:#ff6b6b;color:white">Reset</button></div></div>
+  <div style="margin-top:8px;text-align:center"><button id="closeSettings" class="btn small" style="background:linear-gradient(90deg,#66fcf1,#1de9b6)">Zamknij</button></div>
 </div>
 
-<!-- Menu -->
 <div id="menu" class="overlay">
   <div class="card">
     <h2 class="title">FUTURISTIC SHOOTER</h2>
     <p class="subtitle">Poruszaj się strzałkami, strzelaj SPACJĄ</p>
     <div class="row"><button id="playBtn" class="btn">Zagraj</button></div>
+  </div>
+</div>
+
+<div id="pauseOverlay">
+  <div class="pauseBox">
+    <div class="pauseTitle">PAUZA</div>
+    <div style="margin-top:8px;color:var(--muted)">Naciśnij <strong>P</strong> aby wznowić</div>
+  </div>
+</div>
+
+<div id="gameover" class="overlay">
+  <div class="card">
+    <h2 class="title">GAME OVER</h2>
+    <p class="subtitle">Twój wynik: <span id="finalScore">0</span></p>
+    <div class="row">
+      <button id="restartBtn" class="btn">Nowa gra</button>
+      <button id="menuBtn" class="btn small">Menu</button>
+    </div>
   </div>
 </div>
 
@@ -87,24 +87,37 @@ window.addEventListener('resize',resize);resize();
 
 /* --- Sprites --- */
 const spriteSize = 32;
-const playerImg = new Image();
-playerImg.src = (()=>{const c=document.createElement('canvas');c.width=spriteSize;c.height=spriteSize;const g=c.getContext('2d'); g.imageSmoothingEnabled=false; g.clearRect(0,0,spriteSize,spriteSize); g.fillStyle='#00d1a1'; g.fillRect(12,4,8,18); g.fillStyle='#003f2f'; g.fillRect(12,4,8,4); g.fillStyle='#00b388'; g.fillRect(8,18,4,6); g.fillRect(20,18,4,6); g.fillStyle='#ff8a00'; g.fillRect(14,22,4,6); return c.toDataURL();})();
-const bulletImg = new Image();
-bulletImg.src = (()=>{const c=document.createElement('canvas'); c.width=8;c.height=16;const g=c.getContext('2d'); g.imageSmoothingEnabled=false; g.clearRect(0,0,8,16); g.fillStyle='#ffec5c'; g.fillRect(2,0,4,12); g.fillStyle='#ffaa00'; g.fillRect(3,12,2,4); return c.toDataURL();})();
-const enemyImg = new Image();
-enemyImg.src = (()=>{const c=document.createElement('canvas'); c.width=spriteSize;c.height=spriteSize; const g=c.getContext('2d'); g.imageSmoothingEnabled=false; g.clearRect(0,0,spriteSize,spriteSize); g.fillStyle='#ff6b6b'; g.fillRect(6,6,20,20); g.fillStyle='#7f1d1d'; g.fillRect(6,6,20,6); g.fillStyle='#ffa3a3'; g.fillRect(10,12,12,12); return c.toDataURL();})();
+const playerImg = new Image(); playerImg.src=(()=>{
+  const c=document.createElement('canvas'); c.width=spriteSize;c.height=spriteSize; const g=c.getContext('2d');
+  g.imageSmoothingEnabled=false; g.clearRect(0,0,spriteSize,spriteSize);
+  g.fillStyle='#00d1a1'; g.fillRect(12,4,8,18);
+  g.fillStyle='#003f2f'; g.fillRect(12,4,8,4);
+  g.fillStyle='#00b388'; g.fillRect(8,18,4,6); g.fillRect(20,18,4,6);
+  g.fillStyle='#ff8a00'; g.fillRect(14,22,4,6);
+  return c.toDataURL();
+})();
+const bulletImg=new Image(); bulletImg.src=(()=>{const c=document.createElement('canvas');c.width=8;c.height=16;const g=c.getContext('2d'); g.imageSmoothingEnabled=false; g.clearRect(0,0,8,16); g.fillStyle='#ffec5c'; g.fillRect(2,0,4,12); g.fillStyle='#ffaa00'; g.fillRect(3,12,2,4); return c.toDataURL();})();
+const enemyImg=new Image(); enemyImg.src=(()=>{const c=document.createElement('canvas');c.width=spriteSize;c.height=spriteSize;const g=c.getContext('2d'); g.imageSmoothingEnabled=false; g.clearRect(0,0,spriteSize,spriteSize); g.fillStyle='#ff6b6b'; g.fillRect(6,6,20,20); g.fillStyle='#7f1d1d'; g.fillRect(6,6,20,6); g.fillStyle='#ffa3a3'; g.fillRect(10,12,12,12); return c.toDataURL();})();
 
 /* --- Player --- */
-let level = 1;
-let score = 0;
-let highScore = parseInt(localStorage.getItem('fs_high'))||0;
-const player={x:canvas.width/2,y:canvas.height-100,width:48,height:64,speed:6,lives:100,maxLives:100,xp:0,xpGoal:100};
+let level=parseInt(localStorage.getItem('fs_level'))||1;
+let score=parseInt(localStorage.getItem('fs_score'))||0;
+let highScore=parseInt(localStorage.getItem('fs_high'))||0;
+let xp=parseInt(localStorage.getItem('fs_xp'))||0;
+let xpGoal=parseInt(localStorage.getItem('fs_xpGoal'))||100;
+const player={x:canvas.width/2,y:canvas.height-100,width:48,height:64,speed:6,lives:100,maxLives:100};
 const bullets=[];
 const enemies=[];
+let gameStarted=false;
+let paused=false;
 
 /* --- Input --- */
 const keys={};
-document.addEventListener('keydown',e=>{keys[e.key]=true;if(e.key===' '){ fire(); }});
+document.addEventListener('keydown',e=>{
+  keys[e.key]=true;
+  if(e.key===' ' && gameStarted && !paused){fire();}
+  if(e.key==='p' || e.key==='P'){togglePause();}
+});
 document.addEventListener('keyup',e=>{keys[e.key]=false;});
 function fire(){ bullets.push({x:player.x-4,y:player.y-28,w:8,h:16,speed:12}); }
 
@@ -115,39 +128,24 @@ const hudLevel=document.getElementById('hudLevel');
 const hudScore=document.getElementById('hudScore');
 const hudHS=document.getElementById('hudHS');
 
-/* --- Audio --- */
-let soundOn=true;
-const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-const masterGain = audioCtx.createGain(); masterGain.gain.value=0.9; masterGain.connect(audioCtx.destination);
-function setVolume(v){ masterGain.gain.value=v; }
-document.getElementById('vol').oninput=(e)=>{ setVolume(e.target.value); };
-
 /* --- Enemies --- */
-function spawnEnemy(){
-  const size = 32;
-  const x = Math.random()*(canvas.width-size);
-  const y = -size;
-  const hp = 40;
-  enemies.push({x,y,w:size,h:size,hp,maxHp:hp});
-}
+function spawnEnemy(){ const size=32; const x=Math.random()*(canvas.width-size); const y=-size; const hp=40; enemies.push({x,y,w:size,h:size,hp,maxHp:hp}); }
 
 /* --- Update --- */
 function update(){
-  // player
+  if(!gameStarted || paused) return;
   if(keys['ArrowLeft']) player.x-=player.speed;
   if(keys['ArrowRight']) player.x+=player.speed;
   if(keys['ArrowUp']) player.y-=player.speed;
   if(keys['ArrowDown']) player.y+=player.speed;
-  player.x=Math.max(player.width/2, Math.min(canvas.width-player.width/2,player.x));
-  player.y=Math.max(player.height/2, Math.min(canvas.height-player.height/2,player.y));
+  player.x=Math.max(player.width/2,Math.min(canvas.width-player.width/2,player.x));
+  player.y=Math.max(player.height/2,Math.min(canvas.height-player.height/2,player.y));
 
-  // bullets
   for(let i=bullets.length-1;i>=0;i--){
     bullets[i].y-=bullets[i].speed;
     if(bullets[i].y+bullets[i].h<0) bullets.splice(i,1);
   }
 
-  // enemies
   for(let i=enemies.length-1;i>=0;i--){
     const e=enemies[i]; e.y+=1.5;
     for(let j=bullets.length-1;j>=0;j--){
@@ -155,23 +153,21 @@ function update(){
       if(b.x<b.x+e.w && b.x+b.w>e.x && b.y<b.y+e.h && b.y+b.h>e.y){
         bullets.splice(j,1);
         e.hp-=20;
-        if(e.hp<=0){ enemies.splice(i,1); score+=100; player.xp+=20; if(player.xp>=player.xpGoal){player.xp-=player.xpGoal;player.xpGoal=Math.floor(player.xpGoal*1.5); level++;} }
+        if(e.hp<=0){ enemies.splice(i,1); score+=100; xp+=20; if(xp>=xpGoal){level++; xp-=xpGoal; xpGoal=Math.floor(xpGoal*1.5);} saveProgress(); }
         break;
       }
     }
     if(player.x-player.width/2<e.x+e.w && player.x+player.width/2>e.x && player.y-player.height/2<e.y+e.h && player.y+player.height/2>e.y){
       enemies.splice(i,1); player.lives-=20;
-      if(player.lives<=0){ if(score>highScore){highScore=score; localStorage.setItem('fs_high',highScore);} alert('GAME OVER!'); location.reload(); }
+      if(player.lives<=0){ endGame(); }
     }
     if(e.y>canvas.height+50) enemies.splice(i,1);
   }
 
-  // spawn
   if(Math.random()<0.02) spawnEnemy();
 
-  // HUD
   hudHP.innerText=player.lives+'/'+player.maxLives;
-  hudXP.innerText=player.xp+' / '+player.xpGoal;
+  hudXP.innerText=xp+' / '+xpGoal;
   hudLevel.innerText=level;
   hudScore.innerText=score;
   hudHS.innerText=highScore;
@@ -184,27 +180,48 @@ function draw(){
   bullets.forEach(b=>ctx.drawImage(bulletImg,b.x,b.y,b.w,b.h));
   enemies.forEach(e=>{
     ctx.drawImage(enemyImg,e.x,e.y,e.w,e.h);
-    const barW=e.w;
-    ctx.fillStyle='#222'; ctx.fillRect(e.x,e.y-6,barW,4);
-    ctx.fillStyle='#6eff9f'; ctx.fillRect(e.x,e.y-6,barW*(e.hp/e.maxHp),4);
+    ctx.fillStyle='#222'; ctx.fillRect(e.x,e.y-6,e.w,4);
+    ctx.fillStyle='#6eff9f'; ctx.fillRect(e.x,e.y-6,e.w*(e.hp/e.maxHp),4);
   });
 }
 
-function loop(){ update(); draw(); requestAnimationFrame(loop); }
+/* --- Loop --- */
+function loop(){update(); draw(); if(gameStarted) requestAnimationFrame(loop);}
+document.getElementById('playBtn').onclick=()=>{startGame();};
 
-/* --- Start game --- */
-document.getElementById('playBtn').onclick=()=>{
+function startGame(){
+  gameStarted=true; paused=false;
   document.getElementById('menu').style.display='none';
+  player.x=canvas.width/2; player.y=canvas.height-100; player.lives=100;
+  bullets.length=0; enemies.length=0;
   loop();
-};
+}
 
-/* --- Settings --- */
-const settingsPanel=document.getElementById('settingsPanel');
+function togglePause(){paused=!paused; document.getElementById('pauseOverlay').style.display=paused?'flex':'none';}
+
+function endGame(){
+  gameStarted=false;
+  if(score>highScore){highScore=score;}
+  localStorage.setItem('fs_high',highScore);
+  document.getElementById('finalScore').innerText=score;
+  document.getElementById('gameover').style.display='flex';
+}
+
+document.getElementById('restartBtn').onclick=()=>{document.getElementById('gameover').style.display='none'; startGame();};
+document.getElementById('menuBtn').onclick=()=>{document.getElementById('gameover').style.display='none'; document.getElementById('menu').style.display='flex';};
+
+function saveProgress(){
+  localStorage.setItem('fs_level',level);
+  localStorage.setItem('fs_score',score);
+  localStorage.setItem('fs_xp',xp);
+  localStorage.setItem('fs_xpGoal',xpGoal);
+}
+
 document.getElementById('settingsToggle').onclick=()=>{settingsPanel.style.display=settingsPanel.style.display==='block'?'none':'block';};
 document.getElementById('closeSettings').onclick=()=>{settingsPanel.style.display='none';};
-document.getElementById('soundToggle').onchange=(e)=>{soundOn=e.target.checked; masterGain.gain=soundOn?parseFloat(document.getElementById('vol').value):0;};
-document.getElementById('resetProgress').onclick=()=>{if(confirm('Resetować postęp?')){location.reload();}};
-document.getElementById('difficulty').onchange=(e)=>{console.log('Difficulty:',e.target.value);}
+document.getElementById('soundToggle').onchange=(e)=>{soundOn=e.target.checked;};
+document.getElementById('resetProgress').onclick=()=>{if(confirm('Resetować postęp?')){localStorage.clear(); location.reload();}};
+document.getElementById('difficulty').onchange=(e)=>{console.log('Trudność:',e.target.value);}
 </script>
 </body>
 </html>
