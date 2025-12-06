@@ -3,338 +3,141 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Futuristic Shooter — Pro (stable)</title>
+<title>Futuristic Shooter — Pro</title>
 <style>
-  :root{
-    --bg1:#071025; --bg2:#000814; --accent:#1de9b6; --accent2:#66fcf1;
-    --muted:#9aa5b1;
-  }
-  html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg1),var(--bg2));font-family:Inter,Arial,Helvetica,sans-serif;color:#e6f7ff;}
-  canvas{display:block;width:100vw;height:100vh;}
-  /* Menu & overlays */
-  .overlay{position:fixed;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
-  .card{pointer-events:auto;background:linear-gradient(180deg,rgba(7,16,37,0.85),rgba(0,8,20,0.9));border-radius:14px;padding:22px;border:1px solid rgba(110,230,190,0.12);box-shadow:0 10px 30px rgba(0,0,0,0.6);min-width:320px;max-width:720px;}
-  .title{font-size:36px;text-align:center;margin:0 0 6px 0;color:var(--accent);letter-spacing:1px;text-shadow:0 6px 18px rgba(34,202,163,0.08);}
-  .subtitle{color:var(--muted);text-align:center;margin:6px 0 14px 0;}
-  .btn{display:inline-block;padding:12px 20px;border-radius:10px;background:linear-gradient(90deg,var(--accent),var(--accent2));border:none;color:#021019;font-weight:700;cursor:pointer;font-size:16px;margin:6px;}
-  .btn.small{padding:8px 12px;font-size:13px;border-radius:8px;}
-  .row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
-  /* top-right HUD cluster */
-  #hudCluster{position:fixed;right:18px;top:18px;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:auto}
-  .hudBox{background:rgba(10,18,30,0.45);padding:8px 12px;border-radius:10px;border:1px solid rgba(160,255,230,0.06);backdrop-filter:blur(6px);min-width:170px}
-  .hudTitle{font-size:13px;color:var(--muted);margin:0}
-  .hudValue{font-size:18px;color:#eafff7;margin:0;font-weight:600}
-  /* settings small toggle top-left */
-  #settingsToggle{position:fixed;left:18px;top:18px;padding:8px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);color:var(--accent);cursor:pointer;z-index:50}
-  /* pause overlay */
-  #pauseOverlay{position:fixed;left:0;top:0;right:0;bottom:0;display:none;align-items:center;justify-content:center;background:rgba(1,4,10,0.6);backdrop-filter:blur(4px);z-index:40}
-  .pauseBox{border-radius:12px;padding:18px 26px;background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.02));text-align:center;border:1px solid rgba(255,255,255,0.04)}
-  .pauseTitle{font-size:42px;color:var(--accent);margin:0 0 6px 0}
-  /* settings panel */
-  #settingsPanel{position:fixed;left:18px;top:60px;width:320px;max-width:calc(100vw - 40px);z-index:60;display:none}
-  .settingRow{display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.005));margin-bottom:8px;border:1px solid rgba(255,255,255,0.02)}
-  .muted{color:var(--muted);font-size:13px}
-  /* small helpers */
-  .center{display:flex;align-items:center;justify-content:center}
-  footer{position:fixed;left:0;right:0;bottom:8px;text-align:center;color:rgba(230,247,255,0.06);font-size:12px}
-  @media (max-width:520px){
-    .card{min-width:260px;padding:16px}
-    .title{font-size:28px}
-  }
+  html,body{margin:0;padding:0;width:100%;height:100%;background:#071025;overflow:hidden;font-family:Arial, sans-serif;color:#fff;}
+  canvas{display:block;}
+  .overlay{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;justify-content:center;align-items:center;pointer-events:none;}
+  .card{pointer-events:auto;background:rgba(0,0,0,0.7);padding:20px;border-radius:12px;text-align:center;}
+  .btn{padding:10px 16px;background:#1de9b6;border:none;border-radius:8px;color:#021019;cursor:pointer;margin:4px;}
 </style>
 </head>
 <body>
-
-<!-- Canvas -->
 <canvas id="gameCanvas"></canvas>
 
-<!-- HUD cluster (right top) -->
-<div id="hudCluster" aria-hidden="true">
-  <div class="hudBox"><p class="hudTitle">Punkty</p><p id="hudScore" class="hudValue">0</p></div>
-  <div class="hudBox"><p class="hudTitle">Poziom</p><p id="hudLevel" class="hudValue">1</p></div>
-  <div class="hudBox"><p class="hudTitle">High Score</p><p id="hudHS" class="hudValue">0</p></div>
-</div>
-
-<!-- Settings toggle & panel -->
-<button id="settingsToggle" title="Ustawienia (kliknij)">⚙</button>
-<div id="settingsPanel" class="card" aria-hidden="true">
-  <h3 style="margin:0 0 8px 0;color:var(--accent)">Ustawienia</h3>
-  <div class="settingRow"><div><div style="font-weight:700">Dźwięk</div><div class="muted">Włącz/Wyłącz efekty</div></div>
-    <div><input type="checkbox" id="soundToggle" checked /></div></div>
-
-  <div class="settingRow"><div><div style="font-weight:700">Głośność</div><div class="muted">Reguluje level efektów</div></div>
-    <div><input id="vol" type="range" min="0" max="1" step="0.01" value="0.9" /></div></div>
-
-  <div class="settingRow"><div><div style="font-weight:700">Trudność</div><div class="muted">Wybierz tryb</div></div>
-    <div><select id="difficulty"><option value="easy">Easy</option><option value="normal" selected>Normal</option><option value="hard">Hard</option></select></div></div>
-
-  <div class="settingRow"><div><div style="font-weight:700">Zachowaj progres</div><div class="muted">Poziom/XP będą zapisane</div></div>
-    <div><button id="resetProgress" class="btn small" style="background:#ff6b6b;color:white">Resetuj</button></div></div>
-
-  <div style="margin-top:8px;text-align:center">
-    <button id="closeSettings" class="btn small" style="background:linear-gradient(90deg,#66fcf1,#1de9b6)">Zamknij</button>
-  </div>
-</div>
-
-<!-- Menu card -->
 <div id="menu" class="overlay">
   <div class="card">
-    <h2 class="title">FUTURISTIC SHOOTER</h2>
-    <p class="subtitle">Pełnoekranowa strzelanka — pauza: <strong>P</strong> | ustawienia: ⚙</p>
-    <div class="row"><button id="playBtn" class="btn">Zagraj</button><button id="playDemo" class="btn small">Szybki start</button></div>
-    <p style="color:var(--muted);margin-top:12px;font-size:13px">Poruszaj się strzałkami, strzelaj SPACJĄ. Poziomy i XP zapisują się po odświeżeniu.</p>
+    <h2>Futuristic Shooter</h2>
+    <button id="startBtn" class="btn">Start</button>
   </div>
 </div>
-
-<!-- Pause overlay -->
-<div id="pauseOverlay">
-  <div class="pauseBox">
-    <div class="pauseTitle">PAUZA</div>
-    <div style="margin-top:8px;color:var(--muted)">Naciśnij <strong>P</strong> aby wznowić</div>
-    <div style="margin-top:12px" class="row"><button id="resumeBtn" class="btn small">Wznów</button><button id="pauseMenuBtn" class="btn small">Menu</button></div>
-  </div>
-</div>
-
-<!-- Gameover -->
-<div id="gameover" class="overlay" style="display:none">
-  <div class="card">
-    <h2 class="title">Koniec gry</h2>
-    <p class="subtitle">Twój wynik: <span id="finalScore">0</span></p>
-    <div class="row"><button id="restartBtnMain" class="btn">Restart</button><button id="menuBtnMain" class="btn small">Menu</button></div>
-  </div>
-</div>
-
-<footer>© Futuristic Shooter — demo</footer>
 
 <script>
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-function resize(){ canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-window.addEventListener('resize', resize, {passive:true}); resize();
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+window.addEventListener('resize',()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight;});
 
-/* -------------------------
-   Persistent state
-------------------------- */
-let level = parseInt(localStorage.getItem('fs_level')) || 1;
-let xp = parseInt(localStorage.getItem('fs_xp')) || 0;
-let xpGoal = parseInt(localStorage.getItem('fs_xpGoal')) || 100;
-let highScore = parseInt(localStorage.getItem('fs_high')) || 0;
+let gameStarted=false, gameOver=false, paused=false;
+let score=0, level=1, xp=0, xpGoal=100;
 
-/* -------------------------
-   Game state & configs
-------------------------- */
-let gameStarted = false, gameOver=false, paused=false;
-let score = 0, kills = 0;
-const maxEnemies = 10, maxPowerUps = 2;
-let spawnRate = 1200; 
-let enemyHP = 40;
-let shieldTimer = 0;
-
-const difficultySelect = document.getElementById('difficulty');
-function applyDifficulty(mode){
-  if(mode==='easy'){ spawnRate=1600; enemyHP=30; }
-  else if(mode==='normal'){ spawnRate=1200; enemyHP=40; }
-  else { spawnRate=900; enemyHP=55; }
-}
-applyDifficulty(difficultySelect.value);
-
-/* -------------------------
-   Sprites
-------------------------- */
 const playerImg = new Image();
-playerImg.src = 'https://i.imgur.com/3Qp6f2X.png'; // player rocket
-
-const bulletImg = new Image();
-bulletImg.src = 'https://i.imgur.com/nJb5uVr.png'; // bullet
+playerImg.src = 'https://i.imgur.com/3Qp6f2X.png'; // rakieta
 
 const enemyImg = new Image();
-enemyImg.src = 'https://i.imgur.com/tpXozYQ.png'; // enemy sprite PNG
+enemyImg.src = 'https://i.imgur.com/tpXozYQ.png'; // wrogowie PNG
 
-/* -------------------------
-   Player, bullets, enemies
-------------------------- */
-const player = { x: canvas.width/2, y: canvas.height-110, width:48, height:64, speed:7, lives:100, maxLives:100, shield:false };
 const bullets = [];
 const enemies = [];
-const powerUps = [];
 
-/* -------------------------
-   Audio
-------------------------- */
-const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-let soundOn = true;
-let masterGain = audioCtx.createGain(); masterGain.gain.value = 0.9; masterGain.connect(audioCtx.destination);
-const volSlider = document.getElementById('vol');
-volSlider.oninput=()=>{ masterGain.gain=parseFloat(volSlider.value); };
+const player = {x:canvas.width/2, y:canvas.height-100, w:48, h:64, speed:7, hp:100, maxHp:100};
 
-/* -------------------------
-   UI elements
-------------------------- */
-const hudScore = document.getElementById('hudScore');
-const hudLevel = document.getElementById('hudLevel');
-const hudHS = document.getElementById('hudHS');
-const playBtn = document.getElementById('playBtn');
-const playDemoBtn = document.getElementById('playDemo');
-const menuElem = document.getElementById('menu');
-const pauseOverlay = document.getElementById('pauseOverlay');
-const settingsToggle = document.getElementById('settingsToggle');
-const settingsPanel = document.getElementById('settingsPanel');
-const closeSettings = document.getElementById('closeSettings');
-const soundToggle = document.getElementById('soundToggle');
-const resetProgress = document.getElementById('resetProgress');
-const resumeBtn = document.getElementById('resumeBtn');
-const pauseMenuBtn = document.getElementById('pauseMenuBtn');
-const restartBtnMain = document.getElementById('restartBtnMain');
-const menuBtnMain = document.getElementById('menuBtnMain');
+document.getElementById('startBtn').onclick = ()=>{gameStarted=true; document.getElementById('menu').style.display='none'; spawnEnemies();};
 
-/* -------------------------
-   Controls & start
-------------------------- */
-playBtn.onclick = ()=>startGame();
-playDemoBtn.onclick = ()=>startGame(true);
-resumeBtn.onclick = ()=>togglePause(false);
-pauseMenuBtn.onclick = ()=>{ togglePause(false); menuElem.style.display='flex'; gameOver=false; gameStarted=false; };
-restartBtnMain.onclick = ()=>{ startGame(); document.getElementById('gameover').style.display='none'; };
-menuBtnMain.onclick = ()=>{ document.getElementById('gameover').style.display='none'; menuElem.style.display='flex'; gameStarted=false; gameOver=false; };
+const keys = {};
+addEventListener('keydown',e=>{keys[e.key]=true; if(e.key===' ') shoot();});
+addEventListener('keyup',e=>{keys[e.key]=false;});
 
-settingsToggle.onclick = ()=>{ settingsPanel.style.display = settingsPanel.style.display==='block'?'none':'block'; };
-closeSettings.onclick = ()=>{ settingsPanel.style.display='none'; };
-soundToggle.onchange=()=>{ soundOn = soundToggle.checked; masterGain.gain = soundOn? parseFloat(volSlider.value):0; };
-difficultySelect.onchange=()=>{ applyDifficulty(difficultySelect.value); refreshSpawner(); };
-resetProgress.onclick=()=>{ if(confirm('Resetować poziom/XP/HS?')){ level=1; xp=0; xpGoal=100; highScore=0; localStorage.clear(); updateHUD(); } };
+function shoot(){ bullets.push({x:player.x-6,y:player.y-28,w:12,h:28,speed:15}); }
 
-/* -------------------------
-   Input
-------------------------- */
-const keys={};
-addEventListener('keydown',e=>{ if(e.key===' '){ e.preventDefault(); if(gameStarted && !paused && !gameOver) fire(); } if(e.key==='p'||e.key==='P') togglePause(); keys[e.key]=true; });
-addEventListener('keyup',e=>{ keys[e.key]=false; });
-
-function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
-function fire(){ bullets.push({ x:player.x-8,y:player.y-28,w:12,h:28,speed:18 }); }
-
-/* -------------------------
-   Spawn
-------------------------- */
-function spawnEnemy(){ if(enemies.length>=maxEnemies) return; const size=48; const x=Math.random()*(canvas.width-size); enemies.push({x,y:-size,width:size,height:size,hp:enemyHP,maxHp:enemyHP}); }
-function spawnPowerup(){ if(powerUps.length>=maxPowerUps) return; const size=20; const x=Math.random()*(canvas.width-size); const type=Math.random()<0.5?'life':'shield'; powerUps.push({x,y:-size,size,type,pulse:Math.random()*Math.PI*2}); }
-
-let enemySpawner=setInterval(()=>{ if(gameStarted&&!paused&&!gameOver) spawnEnemy(); }, spawnRate);
-let powerSpawner=setInterval(()=>{ if(gameStarted&&!paused&&!gameOver) spawnPowerup(); }, 15000);
-function refreshSpawner(){ clearInterval(enemySpawner); enemySpawner=setInterval(()=>{ if(gameStarted&&!paused&&!gameOver) spawnEnemy(); }, spawnRate); }
-
-/* -------------------------
-   Start game
-------------------------- */
-function startGame(demo=false){
-  gameStarted=true; gameOver=false; paused=false; menuElem.style.display='none'; document.getElementById('gameover').style.display='none';
-  if(demo){ score=500; xp+=10; }
-  player.x=canvas.width/2; player.y=canvas.height-110; player.lives=100; player.shield=false;
-  bullets.length=0; enemies.length=0; powerUps.length=0;
-  updateHUD(); refreshSpawner();
+function spawnEnemies(){
+  if(!gameStarted) return;
+  if(enemies.length<10) enemies.push({x:Math.random()*(canvas.width-48), y:-50, w:48, h:48, hp:40, maxHp:40});
+  setTimeout(spawnEnemies, 1200);
 }
 
-/* -------------------------
-   Pause
-------------------------- */
-function togglePause(state){ paused= typeof state==='boolean'? state: !paused; pauseOverlay.style.display=paused?'flex':'none'; }
-
-/* -------------------------
-   Update
-------------------------- */
-function update(dt){
-  if(!gameStarted||gameOver||paused) return;
+function update(){
+  if(!gameStarted) return;
   if(keys['ArrowLeft']||keys['a']) player.x-=player.speed;
   if(keys['ArrowRight']||keys['d']) player.x+=player.speed;
   if(keys['ArrowUp']||keys['w']) player.y-=player.speed;
   if(keys['ArrowDown']||keys['s']) player.y+=player.speed;
-  player.x=clamp(player.x,player.width/2,canvas.width-player.width/2);
-  player.y=clamp(player.y,player.height/2,canvas.height-player.height/2);
+  player.x = Math.max(player.w/2, Math.min(canvas.width-player.w/2, player.x));
+  player.y = Math.max(player.h/2, Math.min(canvas.height-player.h/2, player.y));
 
-  for(let i=bullets.length-1;i>=0;i--){ let b=bullets[i]; b.y-=b.speed; if(b.y+b.h<0) bullets.splice(i,1); }
+  bullets.forEach((b,i)=>{
+    b.y-=b.speed;
+    if(b.y<0) bullets.splice(i,1);
+  });
 
-  for(let i=enemies.length-1;i>=0;i--){
-    let e=enemies[i]; e.y+=1.2+(enemyHP/60)*0.8;
-    for(let j=bullets.length-1;j>=0;j--){
-      const b=bullets[j];
-      if(b.x<e.x+e.width && b.x+b.w>e.x && b.y<e.y+e.height && b.y+b.h>e.y){
-        bullets.splice(j,1); e.hp-=20; if(e.hp<=0){ score+=100; kills++; xp+=20; if(score>=1000) xp+=30; if(xp>=xpGoal){ level++; xp-=xpGoal; xpGoal=Math.floor(xpGoal*1.5); } enemies.splice(i,1); } break;
+  enemies.forEach((e,ei)=>{
+    e.y+=1.5;
+    bullets.forEach((b,bi)=>{
+      if(b.x<b.x+e.w && b.x+b.w>e.x && b.y<b.y+e.h && b.y+b.h>e.y){
+        e.hp-=20; bullets.splice(bi,1);
+        if(e.hp<=0){ enemies.splice(ei,1); score+=100; xp+=20; if(xp>=xpGoal){ level++; xp-=xpGoal; xpGoal=Math.floor(xpGoal*1.5); } }
       }
+    });
+    if(player.x-player.w/2<e.x+e.w && player.x+player.w/2>e.x && player.y-player.h/2<e.y+e.h && player.y+player.h/2>e.y){
+      player.hp-=20; enemies.splice(ei,1);
+      if(player.hp<=0){ gameOver=true; alert('Koniec gry!'); gameStarted=false; }
     }
-    if(!player.shield && player.x-player.width/2<e.x+e.width && player.x+player.width/2>e.x && player.y-player.height/2<e.y+e.height && player.y+player.height/2>e.y){
-      enemies.splice(i,1); player.lives-=20; if(player.lives<=0){ gameOver=true; gameStarted=false; document.getElementById('finalScore').innerText=score; document.getElementById('gameover').style.display='flex'; if(score>highScore){ highScore=score; localStorage.setItem('fs_high',highScore); } }
-    }
-    if(e.y>canvas.height+100) enemies.splice(i,1);
-  }
-
-  for(let i=powerUps.length-1;i>=0;i--){
-    const p=powerUps[i]; p.y+=1.2; p.pulse+=0.06;
-    if(player.x-player.width/2<p.x+p.size && player.x+player.width/2>p.x && player.y-player.height/2<p.y+p.size && player.y+player.height/2>p.y){
-      if(p.type==='life') player.lives=Math.min(player.maxLives,player.lives+20);
-      else { player.shield=true; shieldTimer=600; }
-      powerUps.splice(i,1);
-    }
-    if(p.y>canvas.height+40) powerUps.splice(i,1);
-  }
-
-  if(player.shield){ shieldTimer--; if(shieldTimer<=0) player.shield=false; }
-
-  localStorage.setItem('fs_level',level);
-  localStorage.setItem('fs_xp',xp);
-  localStorage.setItem('fs_xpGoal',xpGoal);
-  localStorage.setItem('fs_high',highScore);
+    if(e.y>canvas.height+50) enemies.splice(ei,1);
+  });
 }
 
-/* -------------------------
-   Draw
-------------------------- */
+let lastXpWidth = 0;
+let lastHpWidth = 0;
+
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  const g = ctx.createLinearGradient(0,0,0,canvas.height); g.addColorStop(0,'#071025'); g.addColorStop(1,'#000814'); ctx.fillStyle=g; ctx.fillRect(0,0,canvas.width,canvas.height);
 
-  for(let i=0;i<8;i++){ ctx.globalAlpha=0.03+(i%2)*0.02; ctx.fillStyle=i%2===0?'#08303a':'#06202a'; ctx.fillRect((i*120+(performance.now()/80))%canvas.width-40,i*70,3,canvas.height); }
-  ctx.globalAlpha=1;
+  // player
+  if(playerImg.complete) ctx.drawImage(playerImg, player.x-player.w/2, player.y-player.h/2, player.w, player.h); 
+  else { ctx.fillStyle='#1de9b6'; ctx.fillRect(player.x-player.w/2, player.y-player.h/2, player.w, player.h); }
 
-  hudScore.innerText=score; hudLevel.innerText=level; hudHS.innerText=highScore;
+  // bullets
+  ctx.fillStyle='#ffec5c';
+  bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
 
-  const pw=player.width,ph=player.height;
-  ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.fillRect(player.x-pw/2+4,player.y-ph/2+8,pw,ph);
-  if(playerImg.complete) ctx.drawImage(playerImg,player.x-pw/2,player.y-ph/2,pw,ph); else ctx.fillStyle=player.shield?'#4aa3ff':'#1de9b6'; ctx.fillRect(player.x-pw/2,player.y-ph/2,pw,ph);
+  // enemies
+  enemies.forEach(e=>{ if(enemyImg.complete) ctx.drawImage(enemyImg,e.x,e.y,e.w,e.h); else { ctx.fillStyle='#ff6b6b'; ctx.fillRect(e.x,e.y,e.w,e.h); } });
 
-  // HP bar over player
-  const hpWidth=player.width, hpHeight=6;
-  ctx.fillStyle='rgba(0,0,0,0.4)'; ctx.fillRect(player.x-hpWidth/2,player.y-ph/2-12,hpWidth,hpHeight);
-  ctx.fillStyle='#7cff8f'; ctx.fillRect(player.x-hpWidth/2,player.y-ph/2-12,hpWidth*(player.lives/player.maxLives),hpHeight);
-  ctx.strokeStyle='rgba(0,0,0,0.6)'; ctx.strokeRect(player.x-hpWidth/2,player.y-ph/2-12,hpWidth,hpHeight);
+  // dolny lewy HUD: HP + XP
+  const barW = 160, barH = 16;
+  const padding=10;
+  const hpX=padding, hpY=canvas.height-barH*2-padding;
+  const xpX=padding, xpY=canvas.height-barH-padding;
 
-  for(const b of bullets){ if(bulletImg.complete) ctx.drawImage(bulletImg,b.x,b.y,b.w,b.h); else { ctx.fillStyle='#ffec5c'; ctx.fillRect(b.x,b.y,b.w,b.h); } }
+  // płynny animowany efekt
+  lastHpWidth += (barW*(player.hp/player.maxHp)-lastHpWidth)*0.1;
+  lastXpWidth += (barW*(xp/xpGoal)-lastXpWidth)*0.1;
 
-  for(const e of enemies){ if(enemyImg.complete) ctx.drawImage(enemyImg,e.x,e.y,e.width,e.height); else ctx.fillStyle='#ff6b6b'; ctx.fillRect(e.x,e.y,e.width,e.height); }
+  // HP bar gradient
+  const hpGrad=ctx.createLinearGradient(hpX,hpY,hpX+barW,hpY);
+  hpGrad.addColorStop(0,'#ff4e50'); hpGrad.addColorStop(1,'#f9d423');
+  ctx.fillStyle='rgba(50,50,50,0.5)'; ctx.fillRect(hpX,hpY,barW,barH);
+  ctx.fillStyle=hpGrad; ctx.fillRect(hpX,hpY,lastHpWidth,barH);
+  ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.strokeRect(hpX,hpY,barW,barH);
 
-  for(const p of powerUps){
-    const pulse=1+Math.sin(p.pulse)*0.12; ctx.save(); ctx.translate(p.x+p.size/2,p.y+p.size/2); ctx.globalAlpha=0.95;
-    ctx.fillStyle=p.type==='life'?'#7cff8f':'#72e0ff'; ctx.beginPath(); ctx.arc(0,0,p.size/2*pulse,0,Math.PI*2); ctx.fill(); ctx.restore();
-  }
+  // XP bar gradient
+  const xpGrad=ctx.createLinearGradient(xpX,xpY,xpX+barW,xpY);
+  xpGrad.addColorStop(0,'#4facfe'); xpGrad.addColorStop(1,'#00f2fe');
+  ctx.fillStyle='rgba(50,50,50,0.5)'; ctx.fillRect(xpX,xpY,barW,barH);
+  ctx.fillStyle=xpGrad; ctx.fillRect(xpX,xpY,lastXpWidth,barH);
+  ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.strokeRect(xpX,xpY,barW,barH);
 
-  // XP bar top-left
-  const xpBarW=Math.min(420,canvas.width*0.44), xpX=20, xpY=20, xpH=16;
-  ctx.fillStyle='#1b1f25'; ctx.fillRect(xpX,xpY,xpBarW,xpH);
-  ctx.fillStyle='#7da8ff'; ctx.fillRect(xpX,xpY,xpBarW*(xp/xpGoal),xpH);
-  ctx.strokeStyle='rgba(255,255,255,0.06)'; ctx.strokeRect(xpX,xpY,xpBarW,xpH);
-  ctx.fillStyle='#cfe7ff'; ctx.font='12px Arial'; ctx.textAlign='left'; ctx.fillText(`XP ${xp} / ${xpGoal}`, xpX+10,xpY+12);
-
-  if(!gameStarted && !gameOver){ ctx.fillStyle='rgba(255,255,255,0.06)'; ctx.font='12px Arial'; ctx.textAlign='center'; ctx.fillText('Naciśnij Zagraj, aby rozpocząć — pauza: P — ustawienia: ⚙',canvas.width/2,canvas.height/2+80); }
+  // tekst
+  ctx.fillStyle='#fff'; ctx.font='12px Arial'; ctx.fillText(`HP: ${player.hp}/${player.maxHp}`, hpX+4, hpY+12);
+  ctx.fillText(`XP: ${xp}/${xpGoal}`, xpX+4, xpY+12);
 }
 
-/* -------------------------
-   Game loop
-------------------------- */
-let last=performance.now();
-function frame(now){ const dt=now-last; last=now; update(dt); draw(); requestAnimationFrame(frame); }
-requestAnimationFrame(frame);
-
-function updateHUD(){ hudScore.innerText=score; hudLevel.innerText=level; hudHS.innerText=highScore; }
-
+function loop(){
+  if(gameStarted){ update(); draw(); }
+  requestAnimationFrame(loop);
+}
+loop();
 </script>
 </body>
 </html>
