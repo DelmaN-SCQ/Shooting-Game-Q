@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Futuristic Shooter — Pro</title>
+<title>Futuristic Shooter — Naprawiony</title>
 <style>
 :root{
 --bg1:#071025; --bg2:#000814; --accent:#1de9b6; --accent2:#66fcf1; --muted:#9aa5b1;
@@ -87,15 +87,7 @@ window.addEventListener('resize',resize);resize();
 
 /* --- Sprites --- */
 const spriteSize = 32;
-const playerImg = new Image(); playerImg.src=(()=>{
-  const c=document.createElement('canvas'); c.width=spriteSize;c.height=spriteSize; const g=c.getContext('2d');
-  g.imageSmoothingEnabled=false; g.clearRect(0,0,spriteSize,spriteSize);
-  g.fillStyle='#00d1a1'; g.fillRect(12,4,8,18);
-  g.fillStyle='#003f2f'; g.fillRect(12,4,8,4);
-  g.fillStyle='#00b388'; g.fillRect(8,18,4,6); g.fillRect(20,18,4,6);
-  g.fillStyle='#ff8a00'; g.fillRect(14,22,4,6);
-  return c.toDataURL();
-})();
+const playerImg = new Image(); playerImg.src=(()=>{const c=document.createElement('canvas');c.width=spriteSize;c.height=spriteSize;const g=c.getContext('2d'); g.imageSmoothingEnabled=false; g.clearRect(0,0,spriteSize,spriteSize); g.fillStyle='#00d1a1'; g.fillRect(12,4,8,18); g.fillStyle='#003f2f'; g.fillRect(12,4,8,4); g.fillStyle='#00b388'; g.fillRect(8,18,4,6); g.fillRect(20,18,4,6); g.fillStyle='#ff8a00'; g.fillRect(14,22,4,6); return c.toDataURL();})();
 const bulletImg=new Image(); bulletImg.src=(()=>{const c=document.createElement('canvas');c.width=8;c.height=16;const g=c.getContext('2d'); g.imageSmoothingEnabled=false; g.clearRect(0,0,8,16); g.fillStyle='#ffec5c'; g.fillRect(2,0,4,12); g.fillStyle='#ffaa00'; g.fillRect(3,12,2,4); return c.toDataURL();})();
 const enemyImg=new Image(); enemyImg.src=(()=>{const c=document.createElement('canvas');c.width=spriteSize;c.height=spriteSize;const g=c.getContext('2d'); g.imageSmoothingEnabled=false; g.clearRect(0,0,spriteSize,spriteSize); g.fillStyle='#ff6b6b'; g.fillRect(6,6,20,20); g.fillStyle='#7f1d1d'; g.fillRect(6,6,20,6); g.fillStyle='#ffa3a3'; g.fillRect(10,12,12,12); return c.toDataURL();})();
 
