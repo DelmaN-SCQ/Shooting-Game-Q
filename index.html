@@ -3,14 +3,20 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Futuristic Shooter — Pro</title>
+<title>Futuristic Shooter — Full</title>
 <style>
 :root{
   --bg1:#071025; --bg2:#000814; --accent:#1de9b6; --accent2:#66fcf1;
   --muted:#9aa5b1;
 }
-html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg1),var(--bg2));font-family:Inter,Arial,Helvetica,sans-serif;color:#e6f7ff;}
+html,body{margin:0;height:100%;font-family:Inter,Arial,sans-serif;color:#e6f7ff;background:linear-gradient(180deg,var(--bg1),var(--bg2));}
 canvas{display:block;width:100vw;height:100vh;}
+
+/* HUD */
+#hudCluster{position:fixed;right:18px;top:18px;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:auto;}
+.hudBox{background:rgba(10,18,30,0.45);padding:8px 12px;border-radius:10px;border:1px solid rgba(160,255,230,0.06);backdrop-filter:blur(6px);min-width:170px}
+.hudTitle{font-size:13px;color:var(--muted);margin:0}
+.hudValue{font-size:18px;color:#eafff7;margin:0;font-weight:600}
 
 /* Overlay cards */
 .overlay{position:fixed;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;pointer-events:auto;z-index:50;}
@@ -21,15 +27,9 @@ canvas{display:block;width:100vw;height:100vh;}
 .btn.small{padding:8px 12px;font-size:13px;border-radius:8px;}
 .row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
 
-/* HUD right top */
-#hudCluster{position:fixed;right:18px;top:18px;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:auto}
-.hudBox{background:rgba(10,18,30,0.45);padding:8px 12px;border-radius:10px;border:1px solid rgba(160,255,230,0.06);backdrop-filter:blur(6px);min-width:170px}
-.hudTitle{font-size:13px;color:var(--muted);margin:0}
-.hudValue{font-size:18px;color:#eafff7;margin:0;font-weight:600}
-
 /* Pause & Game Over */
-#pauseOverlay,#gameoverOverlay{position:fixed;left:0;top:0;right:0;bottom:0;display:none;align-items:center;justify-content:center;background:rgba(1,4,10,0.6);backdrop-filter:blur(4px);z-index:40}
-.pauseBox,.gameoverBox{border-radius:12px;padding:22px;background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.02));text-align:center;border:1px solid rgba(255,255,255,0.04)}
+#pauseOverlay,#gameoverOverlay{position:fixed;left:0;top:0;right:0;bottom:0;display:none;align-items:center;justify-content:center;background:rgba(1,4,10,0.6);backdrop-filter:blur(4px);z-index:40;}
+.pauseBox,.gameoverBox{border-radius:12px;padding:22px;background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.02));text-align:center;border:1px solid rgba(255,255,255,0.04);}
 .pauseTitle,.gameoverTitle{font-size:42px;color:var(--accent);margin:0 0 8px 0}
 
 /* Settings overlay */
@@ -110,44 +110,46 @@ canvas{display:block;width:100vw;height:100vh;}
 </div>
 
 <script>
+// Canvas
 const canvas=document.getElementById('gameCanvas');
 const ctx=canvas.getContext('2d');
 function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
 window.addEventListener('resize',resize); resize();
 
-/* Game state */
+// Game state
 let gameStarted=false,paused=false,gameOver=false;
 let score=0,level=1,xp=0,xpGoal=100,highScore=0;
 const player={x:0,y:0,width:48,height:64,speed:7,lives:100,maxLives:100,shield:false};
 const bullets=[],enemies=[],powerUps=[];
 
-/* UI elements */
+// HUD elements
+const hudScore=document.getElementById('hudScore'),hudLevel=document.getElementById('hudLevel'),hudHS=document.getElementById('hudHS');
+
+// Menu elements
 const menuElem=document.getElementById('menu'),playBtn=document.getElementById('playBtn'),settingsBtn=document.getElementById('settingsBtn');
 const settingsPanel=document.getElementById('settingsPanel'),soundToggle=document.getElementById('soundToggle'),volSlider=document.getElementById('vol'),difficultySelect=document.getElementById('difficulty');
 const pauseOverlay=document.getElementById('pauseOverlay'),resumeBtn=document.getElementById('resumeBtn'),pauseMenuBtn=document.getElementById('pauseMenuBtn');
 const gameoverOverlay=document.getElementById('gameoverOverlay'),finalScore=document.getElementById('finalScore'),restartBtn=document.getElementById('restartBtn'),menuBtn=document.getElementById('menuBtn');
-const hudScore=document.getElementById('hudScore'),hudLevel=document.getElementById('hudLevel'),hudHS=document.getElementById('hudHS');
 
-/* Buttons */
+// Buttons
 playBtn.onclick=()=>{menuElem.style.display='none'; startGame();};
 settingsBtn.onclick=()=>{settingsPanel.style.display='block';};
 resumeBtn.onclick=()=>togglePause(false); pauseMenuBtn.onclick=()=>{togglePause(false); menuElem.style.display='flex'; gameOver=false; gameStarted=false;}
-restartBtn.onclick=()=>{startGame(); gameoverOverlay.style.display='none';} menuBtn.onclick=()=>{gameoverOverlay.style.display='none';menuElem.style.display='flex'; gameOver=false;gameStarted=false;}
-soundToggle.onchange=()=>{}; volSlider.oninput=()=>{}; difficultySelect.onchange=()=>{};
+restartBtn.onclick=()=>{startGame(); gameoverOverlay.style.display='none';} menuBtn.onclick=()=>{gameoverOverlay.style.display='none';menuElem.style.display='flex'; gameOver=false;gameStarted=false;};
 
-/* Input */
+// Input
 const keys={};
 addEventListener('keydown',e=>{if(e.key==='p'||e.key==='P') togglePause(); keys[e.key]=true;});
 addEventListener('keyup',e=>{keys[e.key]=false;});
 
-/* Game functions */
+// Game functions
 function startGame(){
   gameStarted=true; gameOver=false; paused=false; 
   player.x=canvas.width/2; player.y=canvas.height-110; player.lives=100;
 }
 function togglePause(state){paused=(typeof state==='boolean')?state:!paused; pauseOverlay.style.display=paused?'flex':'none';}
 
-/* Main loop */
+// Main loop
 function update(dt){}
 function draw(){ctx.clearRect(0,0,canvas.width,canvas.height);}
 function frame(now){update(0); draw(); requestAnimationFrame(frame);}
