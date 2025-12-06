@@ -159,8 +159,7 @@ function makeSprite_drawPixelArt(w,h,drawFn){
 }
 
 const spriteSize = 32;
-const playerSrc = makeSprite_drawPixelArt(spriteSize, spriteSize, (g, w, h) => {
- // nowa rakieta bez tła
+// nowa rakieta bez tła
 const playerCanvas = document.createElement('canvas');
 playerCanvas.width = spriteSize;
 playerCanvas.height = spriteSize;
@@ -185,8 +184,6 @@ g.fillRect(14,22,4,6);
 // zamiast makeSprite_drawPixelArt używamy canvas jako obraz
 const playerImg = new Image();
 playerImg.src = playerCanvas.toDataURL('image/png');
-
-
 
 // bullet sprite:
 const bulletSrc = makeSprite_drawPixelArt(8,16,(g,w,h)=>{
