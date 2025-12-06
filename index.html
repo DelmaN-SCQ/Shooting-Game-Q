@@ -12,7 +12,7 @@ canvas{display:block;}
 .bar-fill{height:12px;width:50%;border-radius:6px;}
 #scoreboard{position:fixed;right:20px;top:20px;text-align:right;}
 #scoreboard div{margin-bottom:6px;}
-#menu, #gameover{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);display:flex;justify-content:center;align-items:center;flex-direction:column;z-index:10;}
+#menu, #gameover, #pauseMenu{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);display:flex;justify-content:center;align-items:center;flex-direction:column;z-index:10;}
 button{padding:10px 20px;margin:6px;font-size:16px;cursor:pointer;border-radius:10px;border:none;background:#1de9b6;color:#021019;font-weight:700;}
 </style>
 </head>
@@ -37,6 +37,12 @@ button{padding:10px 20px;margin:6px;font-size:16px;cursor:pointer;border-radius:
   <button id="startBtn">Zagraj</button>
 </div>
 
+<div id="pauseMenu" style="display:none">
+  <h1>Pauza</h1>
+  <button id="resumeBtn">Wznów</button>
+  <button id="menuBtnPause">Menu</button>
+</div>
+
 <div id="gameover" style="display:none">
   <h1>Koniec gry</h1>
   <div>Twój wynik: <span id="finalScore">0</span></div>
@@ -45,7 +51,6 @@ button{padding:10px 20px;margin:6px;font-size:16px;cursor:pointer;border-radius:
 </div>
 
 <script>
-// --- Canvas setup ---
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
@@ -63,14 +68,15 @@ let xpGoal = 100;
 let highscore = parseInt(localStorage.getItem('highscore')) || 0;
 let gameStarted = false;
 let gameOver = false;
+let paused = false;
 
 // --- Sprites ---
 const playerImg = new Image();
-playerImg.src = 'https://i.imgur.com/8f0E4tG.png'; // przykładowy rakieta sprite PNG
+playerImg.src = 'https://i.imgur.com/8f0E4tG.png'; 
 const enemyImg = new Image();
-enemyImg.src = 'https://i.imgur.com/4W9xZ0s.png'; // przykładowy wrog sprite PNG
+enemyImg.src = 'https://i.imgur.com/4W9xZ0s.png'; 
 const bulletImg = new Image();
-bulletImg.src = 'https://i.imgur.com/8cVUpok.png'; // przykładowy pocisk
+bulletImg.src = 'https://i.imgur.com/8cVUpok.png'; 
 
 // --- HUD ---
 const hpBar = document.getElementById('hp');
@@ -82,51 +88,69 @@ const highscoreSpan = document.getElementById('highscore');
 // --- Menu buttons ---
 document.getElementById('startBtn').onclick = startGame;
 document.getElementById('restartBtn').onclick = startGame;
-document.getElementById('menuBtn').onclick = ()=>{
-    document.getElementById('menu').style.display='flex';
-    document.getElementById('gameover').style.display='none';
-    gameOver=false;
-};
+document.getElementById('menuBtn').onclick = ()=>{ showMenu(); };
+document.getElementById('menuBtnPause').onclick = ()=>{ showMenu(); };
+document.getElementById('resumeBtn').onclick = ()=>{ togglePause(false); };
 
 // --- Input ---
 const keys = {};
-window.addEventListener('keydown',e=>keys[e.key]=true);
+window.addEventListener('keydown',e=>{
+    keys[e.key]=true;
+    if(e.key==='p' || e.key==='P') togglePause();
+});
 window.addEventListener('keyup',e=>keys[e.key]=false);
 
 // --- Game functions ---
 function startGame(){
     document.getElementById('menu').style.display='none';
     document.getElementById('gameover').style.display='none';
+    document.getElementById('pauseMenu').style.display='none';
     player.x=canvas.width/2; player.y=canvas.height-100; player.hp=100;
     bullets=[]; enemies=[]; score=0; xp=0;
-    gameStarted = true; gameOver=false;
-    updateHUD();
+    gameStarted = true; gameOver=false; paused=false;
     spawnEnemies();
+    updateHUD();
 }
 
+function showMenu(){
+    document.getElementById('menu').style.display='flex';
+    document.getElementById('pauseMenu').style.display='none';
+    document.getElementById('gameover').style.display='none';
+    gameStarted=false; paused=false; gameOver=false;
+}
+
+function togglePause(state){
+    if(!gameStarted || gameOver) return;
+    paused = state!==undefined ? state : !paused;
+    document.getElementById('pauseMenu').style.display = paused ? 'flex' : 'none';
+}
+
+// --- Spawn enemies ---
 function spawnEnemies(){
     enemies = [];
-    for(let i=0;i<5;i++){
-        enemies.push({x:Math.random()*(canvas.width-48), y:-Math.random()*400, w:48, h:48, hp:40});
+    let count = Math.min(5 + level, 15);
+    for(let i=0;i<count;i++){
+        enemies.push({x:Math.random()*(canvas.width-48), y:-Math.random()*400, w:48, h:48, hp:40+level*10});
     }
 }
 
+// --- Shooting ---
 function fire(){
+    if(!gameStarted || paused) return;
     bullets.push({x:player.x+player.w/2-6, y:player.y-16, w:12, h:16, speed:15});
 }
 
+// --- Update ---
 function update(){
-    if(!gameStarted || gameOver) return;
+    if(!gameStarted || gameOver || paused) return;
 
-    // Player movement
     if(keys['ArrowLeft']||keys['a']) player.x-=player.speed;
     if(keys['ArrowRight']||keys['d']) player.x+=player.speed;
     player.x=Math.max(0, Math.min(canvas.width-player.w, player.x));
 
-    // Shooting
     if(keys[' ']) fire();
 
-    // Bullets update
+    // Bullets
     for(let i=bullets.length-1;i>=0;i--){
         bullets[i].y -= bullets[i].speed;
         if(bullets[i].y<-bullets[i].h){ bullets.splice(i,1); continue; }
@@ -139,7 +163,7 @@ function update(){
                     enemies.splice(j,1);
                     score += 10;
                     xp += 20;
-                    if(xp>=xpGoal){ level++; xp-=xpGoal; xpGoal=Math.floor(xpGoal*1.3);}
+                    if(xp>=xpGoal){ level++; xp-=xpGoal; xpGoal=Math.floor(xpGoal*1.3); spawnEnemies(); }
                     spawnEnemies();
                 }
                 break;
@@ -147,9 +171,9 @@ function update(){
         }
     }
 
-    // Enemies update
+    // Enemies
     for(let i=enemies.length-1;i>=0;i--){
-        enemies[i].y += 2;
+        enemies[i].y += 2 + level*0.2;
         if(enemies[i].y>canvas.height){
             player.hp -= 20;
             enemies.splice(i,1);
@@ -180,20 +204,25 @@ function endGame(){
     localStorage.setItem('xp',xp);
 }
 
+// --- Draw ---
 function draw(){
     ctx.clearRect(0,0,canvas.width,canvas.height);
-    // player
+    if(!gameStarted) return;
+
+    // Player
     ctx.drawImage(playerImg, player.x, player.y, player.w, player.h);
-    // bullets
+
+    // Bullets
     bullets.forEach(b=>ctx.drawImage(bulletImg, b.x, b.y, b.w, b.h));
-    // enemies
+
+    // Enemies
     enemies.forEach(e=>{
         ctx.drawImage(enemyImg, e.x, e.y, e.w, e.h);
         // hp bar
         ctx.fillStyle='red';
         ctx.fillRect(e.x, e.y-6, e.w, 4);
         ctx.fillStyle='lime';
-        ctx.fillRect(e.x, e.y-6, e.w*(e.hp/40),4);
+        ctx.fillRect(e.x, e.y-6, e.w*(e.hp/(40+level*10)),4);
     });
 }
 
@@ -204,8 +233,6 @@ function loop(){
     requestAnimationFrame(loop);
 }
 loop();
-
-// Show highscore/level before start
 updateHUD();
 </script>
 </body>
