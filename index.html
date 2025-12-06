@@ -34,6 +34,9 @@ canvas{display:block;width:100vw;height:100vh;}
 <div id="hudCluster">
   <div class="hudBox"><p class="hudTitle">HP</p><p id="hudHP" class="hudValue">100</p></div>
   <div class="hudBox"><p class="hudTitle">XP</p><p id="hudXP" class="hudValue">0 / 100</p></div>
+  <div class="hudBox"><p class="hudTitle">Poziom</p><p id="hudLevel" class="hudValue">1</p></div>
+  <div class="hudBox"><p class="hudTitle">Wynik</p><p id="hudScore" class="hudValue">0</p></div>
+  <div class="hudBox"><p class="hudTitle">Najlepszy wynik</p><p id="hudHS" class="hudValue">0</p></div>
 </div>
 
 <!-- Settings toggle -->
@@ -92,10 +95,12 @@ const enemyImg = new Image();
 enemyImg.src = (()=>{const c=document.createElement('canvas'); c.width=spriteSize;c.height=spriteSize; const g=c.getContext('2d'); g.imageSmoothingEnabled=false; g.clearRect(0,0,spriteSize,spriteSize); g.fillStyle='#ff6b6b'; g.fillRect(6,6,20,20); g.fillStyle='#7f1d1d'; g.fillRect(6,6,20,6); g.fillStyle='#ffa3a3'; g.fillRect(10,12,12,12); return c.toDataURL();})();
 
 /* --- Player --- */
+let level = 1;
+let score = 0;
+let highScore = parseInt(localStorage.getItem('fs_high'))||0;
 const player={x:canvas.width/2,y:canvas.height-100,width:48,height:64,speed:6,lives:100,maxLives:100,xp:0,xpGoal:100};
 const bullets=[];
 const enemies=[];
-let score=0;
 
 /* --- Input --- */
 const keys={};
@@ -106,6 +111,9 @@ function fire(){ bullets.push({x:player.x-4,y:player.y-28,w:8,h:16,speed:12}); }
 /* --- HUD --- */
 const hudHP=document.getElementById('hudHP');
 const hudXP=document.getElementById('hudXP');
+const hudLevel=document.getElementById('hudLevel');
+const hudScore=document.getElementById('hudScore');
+const hudHS=document.getElementById('hudHS');
 
 /* --- Audio --- */
 let soundOn=true;
@@ -147,13 +155,13 @@ function update(){
       if(b.x<b.x+e.w && b.x+b.w>e.x && b.y<b.y+e.h && b.y+b.h>e.y){
         bullets.splice(j,1);
         e.hp-=20;
-        if(e.hp<=0){ enemies.splice(i,1); score+=100; player.xp+=20; if(player.xp>=player.xpGoal){player.xp-=player.xpGoal;player.xpGoal=Math.floor(player.xpGoal*1.5);} }
+        if(e.hp<=0){ enemies.splice(i,1); score+=100; player.xp+=20; if(player.xp>=player.xpGoal){player.xp-=player.xpGoal;player.xpGoal=Math.floor(player.xpGoal*1.5); level++;} }
         break;
       }
     }
     if(player.x-player.width/2<e.x+e.w && player.x+player.width/2>e.x && player.y-player.height/2<e.y+e.h && player.y+player.height/2>e.y){
       enemies.splice(i,1); player.lives-=20;
-      if(player.lives<=0){ alert('GAME OVER!'); location.reload(); }
+      if(player.lives<=0){ if(score>highScore){highScore=score; localStorage.setItem('fs_high',highScore);} alert('GAME OVER!'); location.reload(); }
     }
     if(e.y>canvas.height+50) enemies.splice(i,1);
   }
@@ -164,22 +172,18 @@ function update(){
   // HUD
   hudHP.innerText=player.lives+'/'+player.maxLives;
   hudXP.innerText=player.xp+' / '+player.xpGoal;
+  hudLevel.innerText=level;
+  hudScore.innerText=score;
+  hudHS.innerText=highScore;
 }
 
 /* --- Draw --- */
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  // player
   ctx.drawImage(playerImg,player.x-player.width/2,player.y-player.height/2,player.width,player.height);
-
-  // bullets
   bullets.forEach(b=>ctx.drawImage(bulletImg,b.x,b.y,b.w,b.h));
-
-  // enemies
   enemies.forEach(e=>{
     ctx.drawImage(enemyImg,e.x,e.y,e.w,e.h);
-    // HP bar
     const barW=e.w;
     ctx.fillStyle='#222'; ctx.fillRect(e.x,e.y-6,barW,4);
     ctx.fillStyle='#6eff9f'; ctx.fillRect(e.x,e.y-6,barW*(e.hp/e.maxHp),4);
@@ -202,6 +206,5 @@ document.getElementById('soundToggle').onchange=(e)=>{soundOn=e.target.checked; 
 document.getElementById('resetProgress').onclick=()=>{if(confirm('Resetować postęp?')){location.reload();}};
 document.getElementById('difficulty').onchange=(e)=>{console.log('Difficulty:',e.target.value);}
 </script>
-
 </body>
 </html>
