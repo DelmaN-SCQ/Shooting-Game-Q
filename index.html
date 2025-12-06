@@ -159,36 +159,43 @@ function makeSprite_drawPixelArt(w,h,drawFn){
 }
 
 const spriteSize = 32;
-// player sprite: nowa futurystyczna rakieta pixel-art
 const playerSrc = makeSprite_drawPixelArt(spriteSize, spriteSize, (g, w, h) => {
+  // Tło przezroczyste
   g.clearRect(0, 0, w, h);
 
-  // kadłub rakiety
-  g.fillStyle = '#ff2ecc';
+  // Kadłub rakiety - smukły, futurystyczny
+  g.fillStyle = '#00fff7';
   g.beginPath();
   g.moveTo(w/2, 2);           // szczyt rakiety
-  g.lineTo(w - 10, h - 12);   // prawa krawędź
-  g.lineTo(10, h - 12);       // lewa krawędź
+  g.lineTo(w - 10, h - 10);   // prawa krawędź
+  g.lineTo(10, h - 10);       // lewa krawędź
   g.closePath();
   g.fill();
 
-  // szyba kokpitu
+  // Kokpit / szyba
   g.fillStyle = '#66fcf1';
   g.beginPath();
-  g.ellipse(w/2, h/2 - 2, 4, 6, 0, 0, 2 * Math.PI);
+  g.ellipse(w/2, h/2 - 2, 3, 5, 0, 0, 2 * Math.PI);
   g.fill();
 
-  // boczne skrzydełka
-  g.fillStyle = '#ff6f91';
-  g.fillRect(4, h-14, 6, 6);      // lewy
-  g.fillRect(w-10, h-14, 6, 6);   // prawy
+  // Skrzydełka boczne (małe, aerodynamiczne)
+  g.fillStyle = '#00d1b2';
+  g.fillRect(4, h - 12, 5, 4);       // lewy
+  g.fillRect(w - 9, h - 12, 5, 4);   // prawy
 
-  // płomień silnika
-  g.fillStyle = '#ffb200';
-  g.fillRect(w/2 - 4, h-8, 8, 8);
-  g.fillStyle = '#ff4500';
-  g.fillRect(w/2 - 2, h-4, 4, 4);
+  // Płomień silnika - gradient
+  const flameGrad = g.createLinearGradient(w/2, h-8, w/2, h);
+  flameGrad.addColorStop(0, '#ffd600');
+  flameGrad.addColorStop(1, '#ff3c00');
+  g.fillStyle = flameGrad;
+  g.beginPath();
+  g.moveTo(w/2 - 3, h - 8);
+  g.lineTo(w/2 + 3, h - 8);
+  g.lineTo(w/2, h);
+  g.closePath();
+  g.fill();
 });
+
 
 // bullet sprite:
 const bulletSrc = makeSprite_drawPixelArt(8,16,(g,w,h)=>{
