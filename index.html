@@ -159,32 +159,19 @@ function makeSprite_drawPixelArt(w,h,drawFn){
 }
 
 const spriteSize = 32;
-// nowa rakieta bez tła
-const playerCanvas = document.createElement('canvas');
-playerCanvas.width = spriteSize;
-playerCanvas.height = spriteSize;
-const g = playerCanvas.getContext('2d');
-g.imageSmoothingEnabled = false;
-
-// rakieta: tylko kształty rakiety
-g.fillStyle = '#00d1a1';
-g.fillRect(12,4,8,18);
-g.fillStyle = '#003f2f';
-g.fillRect(12,4,8,4);
-
-// skrzydła
-g.fillStyle = '#00b388';
-g.fillRect(8,18,4,6);
-g.fillRect(20,18,4,6);
-
-// płomień
-g.fillStyle = '#ff8a00';
-g.fillRect(14,22,4,6);
-
-// zamiast makeSprite_drawPixelArt używamy canvas jako obraz
-const playerImg = new Image();
-playerImg.src = playerCanvas.toDataURL('image/png');
-
+// player sprite: simple rocket pixel-art (scaled later)
+const playerSrc = makeSprite_drawPixelArt(spriteSize,spriteSize,(g,w,h)=>{
+  // background transparent
+  g.clearRect(0,0,w,h);
+  // body
+  g.fillStyle='#00d1a1'; g.fillRect(12,4,8,18);
+  g.fillStyle='#003f2f'; g.fillRect(12,4,8,4);
+  // wings
+  g.fillStyle='#00b388'; g.fillRect(8,18,4,6);
+  g.fillRect(20,18,4,6);
+  // flame
+  g.fillStyle='#ff8a00'; g.fillRect(14,22,4,6);
+});
 // bullet sprite:
 const bulletSrc = makeSprite_drawPixelArt(8,16,(g,w,h)=>{
   g.clearRect(0,0,w,h);
