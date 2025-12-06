@@ -5,24 +5,25 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Futuristic Shooter — Pro</title>
 <style>
-  :root{
-    --bg1:#071025; --bg2:#000814; --accent:#1de9b6; --accent2:#66fcf1;
-    --muted:#9aa5b1;
-  }
-  html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg1),var(--bg2));font-family:Inter,Arial,Helvetica,sans-serif;color:#e6f7ff;}
-  canvas{display:block;width:100vw;height:100vh;}
-  .overlay{position:fixed;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
-  .card{pointer-events:auto;background:linear-gradient(180deg,rgba(7,16,37,0.85),rgba(0,8,20,0.9));border-radius:14px;padding:22px;border:1px solid rgba(110,230,190,0.12);box-shadow:0 10px 30px rgba(0,0,0,0.6);min-width:320px;max-width:720px;}
-  .title{font-size:36px;text-align:center;margin:0 0 6px 0;color:var(--accent);letter-spacing:1px;text-shadow:0 6px 18px rgba(34,202,163,0.08);}
-  .subtitle{color:var(--muted);text-align:center;margin:6px 0 14px 0;}
-  .btn{display:inline-block;padding:12px 20px;border-radius:10px;background:linear-gradient(90deg,var(--accent),var(--accent2));border:none;color:#021019;font-weight:700;cursor:pointer;font-size:16px;margin:6px;}
-  .row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
-  #settingsPanel{position:fixed;left:18px;bottom:18px;width:280px;z-index:60;display:none}
-  .settingRow{display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.005));margin-bottom:8px;border:1px solid rgba(255,255,255,0.02)}
-  #hudCluster{position:fixed;left:18px;bottom:18px;display:flex;flex-direction:column;gap:8px;align-items:flex-start;pointer-events:auto}
-  .hudBox{background:rgba(10,18,30,0.45);padding:8px 12px;border-radius:10px;border:1px solid rgba(160,255,230,0.06);backdrop-filter:blur(6px);min-width:140px}
-  .hudTitle{font-size:13px;color:var(--muted);margin:0}
-  .hudValue{font-size:16px;color:#eafff7;margin:0;font-weight:600}
+:root{
+--bg1:#071025; --bg2:#000814; --accent:#1de9b6; --accent2:#66fcf1; --muted:#9aa5b1;
+}
+html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg1),var(--bg2));font-family:Inter,Arial,Helvetica,sans-serif;color:#e6f7ff;}
+canvas{display:block;width:100vw;height:100vh;}
+.overlay{position:fixed;left:0;top:0;right:0;bottom:0;display:flex;align-items:center;justify-content:center;pointer-events:none;}
+.card{pointer-events:auto;background:linear-gradient(180deg,rgba(7,16,37,0.85),rgba(0,8,20,0.9));border-radius:14px;padding:22px;border:1px solid rgba(110,230,190,0.12);box-shadow:0 10px 30px rgba(0,0,0,0.6);min-width:320px;max-width:720px;}
+.title{font-size:36px;text-align:center;margin:0 0 6px 0;color:var(--accent);letter-spacing:1px;text-shadow:0 6px 18px rgba(34,202,163,0.08);}
+.subtitle{color:var(--muted);text-align:center;margin:6px 0 14px 0;}
+.btn{display:inline-block;padding:12px 20px;border-radius:10px;background:linear-gradient(90deg,var(--accent),var(--accent2));border:none;color:#021019;font-weight:700;cursor:pointer;font-size:16px;margin:6px;}
+.row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+#hudCluster{position:fixed;left:18px;bottom:18px;display:flex;flex-direction:column;gap:8px;align-items:flex-start;pointer-events:auto}
+.hudBox{background:rgba(10,18,30,0.45);padding:8px 12px;border-radius:10px;border:1px solid rgba(160,255,230,0.06);backdrop-filter:blur(6px);min-width:140px}
+.hudTitle{font-size:13px;color:var(--muted);margin:0}
+.hudValue{font-size:16px;color:#eafff7;margin:0;font-weight:600}
+#settingsToggle{position:fixed;left:18px;top:18px;padding:8px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);color:var(--accent);cursor:pointer;z-index:50}
+#settingsPanel{position:fixed;left:18px;top:60px;width:320px;max-width:calc(100vw-40px);z-index:60;display:none}
+.settingRow{display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.005));margin-bottom:8px;border:1px solid rgba(255,255,255,0.02)}
+.muted{color:var(--muted);font-size:13px}
 </style>
 </head>
 <body>
@@ -35,15 +36,34 @@
   <div class="hudBox"><p class="hudTitle">XP</p><p id="hudXP" class="hudValue">0 / 100</p></div>
 </div>
 
-<!-- Settings panel -->
+<!-- Settings toggle -->
+<button id="settingsToggle">⚙</button>
 <div id="settingsPanel" class="card">
+  <h3 style="margin:0 0 8px 0;color:var(--accent)">Ustawienia</h3>
   <div class="settingRow">
-    <div>Dźwięk</div>
+    <div><div style="font-weight:700">Dźwięk</div><div class="muted">Włącz/Wyłącz efekty</div></div>
     <div><input type="checkbox" id="soundToggle" checked></div>
   </div>
   <div class="settingRow">
-    <div>Resetuj postęp</div>
+    <div><div style="font-weight:700">Głośność</div><div class="muted">Reguluje level efektów</div></div>
+    <div><input id="vol" type="range" min="0" max="1" step="0.01" value="0.9"></div>
+  </div>
+  <div class="settingRow">
+    <div><div style="font-weight:700">Trudność</div><div class="muted">Wybierz tryb</div></div>
+    <div>
+      <select id="difficulty">
+        <option value="easy">Easy</option>
+        <option value="normal" selected>Normal</option>
+        <option value="hard">Hard</option>
+      </select>
+    </div>
+  </div>
+  <div class="settingRow">
+    <div><div style="font-weight:700">Reset postępu</div></div>
     <div><button id="resetProgress" class="btn small" style="background:#ff6b6b;color:white">Reset</button></div>
+  </div>
+  <div style="margin-top:8px;text-align:center">
+    <button id="closeSettings" class="btn small" style="background:linear-gradient(90deg,#66fcf1,#1de9b6)">Zamknij</button>
   </div>
 </div>
 
@@ -64,41 +84,12 @@ window.addEventListener('resize',resize);resize();
 
 /* --- Sprites --- */
 const spriteSize = 32;
-// Player rocket PNG
 const playerImg = new Image();
-playerImg.src = (function(){
-  const c=document.createElement('canvas');c.width=spriteSize;c.height=spriteSize;
-  const g=c.getContext('2d'); g.imageSmoothingEnabled=false;
-  g.clearRect(0,0,spriteSize,spriteSize);
-  g.fillStyle='#00d1a1'; g.fillRect(12,4,8,18);
-  g.fillStyle='#003f2f'; g.fillRect(12,4,8,4);
-  g.fillStyle='#00b388'; g.fillRect(8,18,4,6); g.fillRect(20,18,4,6);
-  g.fillStyle='#ff8a00'; g.fillRect(14,22,4,6);
-  return c.toDataURL();
-})();
-
-// Bullet PNG
+playerImg.src = (()=>{const c=document.createElement('canvas');c.width=spriteSize;c.height=spriteSize;const g=c.getContext('2d'); g.imageSmoothingEnabled=false; g.clearRect(0,0,spriteSize,spriteSize); g.fillStyle='#00d1a1'; g.fillRect(12,4,8,18); g.fillStyle='#003f2f'; g.fillRect(12,4,8,4); g.fillStyle='#00b388'; g.fillRect(8,18,4,6); g.fillRect(20,18,4,6); g.fillStyle='#ff8a00'; g.fillRect(14,22,4,6); return c.toDataURL();})();
 const bulletImg = new Image();
-bulletImg.src = (function(){
-  const c=document.createElement('canvas'); c.width=8;c.height=16;
-  const g=c.getContext('2d'); g.imageSmoothingEnabled=false;
-  g.clearRect(0,0,8,16);
-  g.fillStyle='#ffec5c'; g.fillRect(2,0,4,12);
-  g.fillStyle='#ffaa00'; g.fillRect(3,12,2,4);
-  return c.toDataURL();
-})();
-
-// Enemy PNG
+bulletImg.src = (()=>{const c=document.createElement('canvas'); c.width=8;c.height=16;const g=c.getContext('2d'); g.imageSmoothingEnabled=false; g.clearRect(0,0,8,16); g.fillStyle='#ffec5c'; g.fillRect(2,0,4,12); g.fillStyle='#ffaa00'; g.fillRect(3,12,2,4); return c.toDataURL();})();
 const enemyImg = new Image();
-enemyImg.src = (function(){
-  const c=document.createElement('canvas'); c.width=spriteSize;c.height=spriteSize;
-  const g=c.getContext('2d'); g.imageSmoothingEnabled=false;
-  g.clearRect(0,0,spriteSize,spriteSize);
-  g.fillStyle='#ff6b6b'; g.fillRect(6,6,20,20);
-  g.fillStyle='#7f1d1d'; g.fillRect(6,6,20,6);
-  g.fillStyle='#ffa3a3'; g.fillRect(10,12,12,12);
-  return c.toDataURL();
-})();
+enemyImg.src = (()=>{const c=document.createElement('canvas'); c.width=spriteSize;c.height=spriteSize; const g=c.getContext('2d'); g.imageSmoothingEnabled=false; g.clearRect(0,0,spriteSize,spriteSize); g.fillStyle='#ff6b6b'; g.fillRect(6,6,20,20); g.fillStyle='#7f1d1d'; g.fillRect(6,6,20,6); g.fillStyle='#ffa3a3'; g.fillRect(10,12,12,12); return c.toDataURL();})();
 
 /* --- Player --- */
 const player={x:canvas.width/2,y:canvas.height-100,width:48,height:64,speed:6,lives:100,maxLives:100,xp:0,xpGoal:100};
@@ -110,12 +101,18 @@ let score=0;
 const keys={};
 document.addEventListener('keydown',e=>{keys[e.key]=true;if(e.key===' '){ fire(); }});
 document.addEventListener('keyup',e=>{keys[e.key]=false;});
-
 function fire(){ bullets.push({x:player.x-4,y:player.y-28,w:8,h:16,speed:12}); }
 
 /* --- HUD --- */
 const hudHP=document.getElementById('hudHP');
 const hudXP=document.getElementById('hudXP');
+
+/* --- Audio --- */
+let soundOn=true;
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const masterGain = audioCtx.createGain(); masterGain.gain.value=0.9; masterGain.connect(audioCtx.destination);
+function setVolume(v){ masterGain.gain.value=v; }
+document.getElementById('vol').oninput=(e)=>{ setVolume(e.target.value); };
 
 /* --- Enemies --- */
 function spawnEnemy(){
@@ -128,7 +125,7 @@ function spawnEnemy(){
 
 /* --- Update --- */
 function update(){
-  // player movement
+  // player
   if(keys['ArrowLeft']) player.x-=player.speed;
   if(keys['ArrowRight']) player.x+=player.speed;
   if(keys['ArrowUp']) player.y-=player.speed;
@@ -145,17 +142,15 @@ function update(){
   // enemies
   for(let i=enemies.length-1;i>=0;i--){
     const e=enemies[i]; e.y+=1.5;
-    // bullet collision
     for(let j=bullets.length-1;j>=0;j--){
       const b=bullets[j];
       if(b.x<b.x+e.w && b.x+b.w>e.x && b.y<b.y+e.h && b.y+b.h>e.y){
         bullets.splice(j,1);
         e.hp-=20;
-        if(e.hp<=0){ enemies.splice(i,1); score+=100; player.xp+=20;if(player.xp>=player.xpGoal){player.xp-=player.xpGoal;player.xpGoal=Math.floor(player.xpGoal*1.5); } }
+        if(e.hp<=0){ enemies.splice(i,1); score+=100; player.xp+=20; if(player.xp>=player.xpGoal){player.xp-=player.xpGoal;player.xpGoal=Math.floor(player.xpGoal*1.5);} }
         break;
       }
     }
-    // player collision
     if(player.x-player.width/2<e.x+e.w && player.x+player.width/2>e.x && player.y-player.height/2<e.y+e.h && player.y+player.height/2>e.y){
       enemies.splice(i,1); player.lives-=20;
       if(player.lives<=0){ alert('GAME OVER!'); location.reload(); }
@@ -163,10 +158,10 @@ function update(){
     if(e.y>canvas.height+50) enemies.splice(i,1);
   }
 
-  // spawn enemies
+  // spawn
   if(Math.random()<0.02) spawnEnemy();
 
-  // HUD update
+  // HUD
   hudHP.innerText=player.lives+'/'+player.maxLives;
   hudXP.innerText=player.xp+' / '+player.xpGoal;
 }
@@ -182,7 +177,13 @@ function draw(){
   bullets.forEach(b=>ctx.drawImage(bulletImg,b.x,b.y,b.w,b.h));
 
   // enemies
-  enemies.forEach(e=>ctx.drawImage(enemyImg,e.x,e.y,e.w,e.h));
+  enemies.forEach(e=>{
+    ctx.drawImage(enemyImg,e.x,e.y,e.w,e.h);
+    // HP bar
+    const barW=e.w;
+    ctx.fillStyle='#222'; ctx.fillRect(e.x,e.y-6,barW,4);
+    ctx.fillStyle='#6eff9f'; ctx.fillRect(e.x,e.y-6,barW*(e.hp/e.maxHp),4);
+  });
 }
 
 function loop(){ update(); draw(); requestAnimationFrame(loop); }
@@ -194,13 +195,12 @@ document.getElementById('playBtn').onclick=()=>{
 };
 
 /* --- Settings --- */
-const settingsPanel = document.getElementById('settingsPanel');
-const soundToggle = document.getElementById('soundToggle');
-const resetProgress = document.getElementById('resetProgress');
-
-settingsPanel.style.display='block'; // panel visible for demo
-soundToggle.onchange = ()=>{ console.log('Sound toggle:', soundToggle.checked); };
-resetProgress.onclick = ()=>{ if(confirm('Reset?')){ location.reload(); } };
+const settingsPanel=document.getElementById('settingsPanel');
+document.getElementById('settingsToggle').onclick=()=>{settingsPanel.style.display=settingsPanel.style.display==='block'?'none':'block';};
+document.getElementById('closeSettings').onclick=()=>{settingsPanel.style.display='none';};
+document.getElementById('soundToggle').onchange=(e)=>{soundOn=e.target.checked; masterGain.gain=soundOn?parseFloat(document.getElementById('vol').value):0;};
+document.getElementById('resetProgress').onclick=()=>{if(confirm('Resetować postęp?')){location.reload();}};
+document.getElementById('difficulty').onchange=(e)=>{console.log('Difficulty:',e.target.value);}
 </script>
 
 </body>
