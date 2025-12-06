@@ -17,22 +17,37 @@
   .subtitle{color:var(--muted);text-align:center;margin:6px 0 14px 0;}
   .btn{display:inline-block;padding:12px 20px;border-radius:10px;background:linear-gradient(90deg,var(--accent),var(--accent2));border:none;color:#021019;font-weight:700;cursor:pointer;font-size:16px;margin:6px;}
   .row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
-  #hudCluster{position:fixed;right:18px;top:18px;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:auto}
-  .hudBox{background:rgba(10,18,30,0.45);padding:8px 12px;border-radius:10px;border:1px solid rgba(160,255,230,0.06);backdrop-filter:blur(6px);min-width:170px}
+  #settingsPanel{position:fixed;left:18px;bottom:18px;width:280px;z-index:60;display:none}
+  .settingRow{display:flex;align-items:center;justify-content:space-between;padding:8px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),rgba(255,255,255,0.005));margin-bottom:8px;border:1px solid rgba(255,255,255,0.02)}
+  #hudCluster{position:fixed;left:18px;bottom:18px;display:flex;flex-direction:column;gap:8px;align-items:flex-start;pointer-events:auto}
+  .hudBox{background:rgba(10,18,30,0.45);padding:8px 12px;border-radius:10px;border:1px solid rgba(160,255,230,0.06);backdrop-filter:blur(6px);min-width:140px}
   .hudTitle{font-size:13px;color:var(--muted);margin:0}
-  .hudValue{font-size:18px;color:#eafff7;margin:0;font-weight:600}
+  .hudValue{font-size:16px;color:#eafff7;margin:0;font-weight:600}
 </style>
 </head>
 <body>
 
 <canvas id="gameCanvas"></canvas>
 
+<!-- HUD left bottom -->
 <div id="hudCluster">
-  <div class="hudBox"><p class="hudTitle">Punkty</p><p id="hudScore" class="hudValue">0</p></div>
   <div class="hudBox"><p class="hudTitle">HP</p><p id="hudHP" class="hudValue">100</p></div>
   <div class="hudBox"><p class="hudTitle">XP</p><p id="hudXP" class="hudValue">0 / 100</p></div>
 </div>
 
+<!-- Settings panel -->
+<div id="settingsPanel" class="card">
+  <div class="settingRow">
+    <div>Dźwięk</div>
+    <div><input type="checkbox" id="soundToggle" checked></div>
+  </div>
+  <div class="settingRow">
+    <div>Resetuj postęp</div>
+    <div><button id="resetProgress" class="btn small" style="background:#ff6b6b;color:white">Reset</button></div>
+  </div>
+</div>
+
+<!-- Menu -->
 <div id="menu" class="overlay">
   <div class="card">
     <h2 class="title">FUTURISTIC SHOOTER</h2>
@@ -47,62 +62,84 @@ const ctx=canvas.getContext('2d');
 function resize(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
 window.addEventListener('resize',resize);resize();
 
-/* --- Player --- */
+/* --- Sprites --- */
+const spriteSize = 32;
+// Player rocket PNG
 const playerImg = new Image();
 playerImg.src = (function(){
-  const c=document.createElement('canvas');c.width=32;c.height=32;
+  const c=document.createElement('canvas');c.width=spriteSize;c.height=spriteSize;
   const g=c.getContext('2d'); g.imageSmoothingEnabled=false;
-  g.clearRect(0,0,32,32);
+  g.clearRect(0,0,spriteSize,spriteSize);
   g.fillStyle='#00d1a1'; g.fillRect(12,4,8,18);
   g.fillStyle='#003f2f'; g.fillRect(12,4,8,4);
   g.fillStyle='#00b388'; g.fillRect(8,18,4,6); g.fillRect(20,18,4,6);
   g.fillStyle='#ff8a00'; g.fillRect(14,22,4,6);
   return c.toDataURL();
 })();
-const player={x:canvas.width/2,y:canvas.height-80,width:48,height:64,speed:6,lives:100,maxLives:100,xp:0,xpGoal:100};
-const bullets=[];
 
-/* --- Enemies --- */
+// Bullet PNG
+const bulletImg = new Image();
+bulletImg.src = (function(){
+  const c=document.createElement('canvas'); c.width=8;c.height=16;
+  const g=c.getContext('2d'); g.imageSmoothingEnabled=false;
+  g.clearRect(0,0,8,16);
+  g.fillStyle='#ffec5c'; g.fillRect(2,0,4,12);
+  g.fillStyle='#ffaa00'; g.fillRect(3,12,2,4);
+  return c.toDataURL();
+})();
+
+// Enemy PNG
+const enemyImg = new Image();
+enemyImg.src = (function(){
+  const c=document.createElement('canvas'); c.width=spriteSize;c.height=spriteSize;
+  const g=c.getContext('2d'); g.imageSmoothingEnabled=false;
+  g.clearRect(0,0,spriteSize,spriteSize);
+  g.fillStyle='#ff6b6b'; g.fillRect(6,6,20,20);
+  g.fillStyle='#7f1d1d'; g.fillRect(6,6,20,6);
+  g.fillStyle='#ffa3a3'; g.fillRect(10,12,12,12);
+  return c.toDataURL();
+})();
+
+/* --- Player --- */
+const player={x:canvas.width/2,y:canvas.height-100,width:48,height:64,speed:6,lives:100,maxLives:100,xp:0,xpGoal:100};
+const bullets=[];
 const enemies=[];
-function spawnEnemy(){
-  const size=32;
-  const x=Math.random()*(canvas.width-size);
-  const y=-size;
-  const hp=40;
-  enemies.push({x,y,w:size,h:size,hp,maxHp:hp});
-}
+let score=0;
 
 /* --- Input --- */
 const keys={};
-document.addEventListener('keydown',e=>{keys[e.key]=true; if(e.key===' '){ fire(); }});
+document.addEventListener('keydown',e=>{keys[e.key]=true;if(e.key===' '){ fire(); }});
 document.addEventListener('keyup',e=>{keys[e.key]=false;});
 
-function fire(){
-  if(!player) return;
-  bullets.push({x:player.x-4,y:player.y-28,w:8,h:16,speed:12});
-}
+function fire(){ bullets.push({x:player.x-4,y:player.y-28,w:8,h:16,speed:12}); }
 
-/* --- UI --- */
-const hudScore=document.getElementById('hudScore');
+/* --- HUD --- */
 const hudHP=document.getElementById('hudHP');
 const hudXP=document.getElementById('hudXP');
 
-let score=0;
+/* --- Enemies --- */
+function spawnEnemy(){
+  const size = 32;
+  const x = Math.random()*(canvas.width-size);
+  const y = -size;
+  const hp = 40;
+  enemies.push({x,y,w:size,h:size,hp,maxHp:hp});
+}
 
-/* --- Game loop --- */
+/* --- Update --- */
 function update(){
   // player movement
-  if(keys['ArrowLeft']) player.x -= player.speed;
-  if(keys['ArrowRight']) player.x += player.speed;
-  if(keys['ArrowUp']) player.y -= player.speed;
-  if(keys['ArrowDown']) player.y += player.speed;
-  player.x = Math.max(player.width/2, Math.min(canvas.width-player.width/2, player.x));
-  player.y = Math.max(player.height/2, Math.min(canvas.height-player.height/2, player.y));
+  if(keys['ArrowLeft']) player.x-=player.speed;
+  if(keys['ArrowRight']) player.x+=player.speed;
+  if(keys['ArrowUp']) player.y-=player.speed;
+  if(keys['ArrowDown']) player.y+=player.speed;
+  player.x=Math.max(player.width/2, Math.min(canvas.width-player.width/2,player.x));
+  player.y=Math.max(player.height/2, Math.min(canvas.height-player.height/2,player.y));
 
   // bullets
   for(let i=bullets.length-1;i>=0;i--){
-    const b=bullets[i]; b.y -= b.speed;
-    if(b.y<0) bullets.splice(i,1);
+    bullets[i].y-=bullets[i].speed;
+    if(bullets[i].y+bullets[i].h<0) bullets.splice(i,1);
   }
 
   // enemies
@@ -114,7 +151,7 @@ function update(){
       if(b.x<b.x+e.w && b.x+b.w>e.x && b.y<b.y+e.h && b.y+b.h>e.y){
         bullets.splice(j,1);
         e.hp-=20;
-        if(e.hp<=0){ enemies.splice(i,1); score+=100; player.xp+=20; if(player.xp>=player.xpGoal){player.xp-=player.xpGoal;player.xpGoal=Math.floor(player.xpGoal*1.5); } }
+        if(e.hp<=0){ enemies.splice(i,1); score+=100; player.xp+=20;if(player.xp>=player.xpGoal){player.xp-=player.xpGoal;player.xpGoal=Math.floor(player.xpGoal*1.5); } }
         break;
       }
     }
@@ -126,15 +163,15 @@ function update(){
     if(e.y>canvas.height+50) enemies.splice(i,1);
   }
 
-  // spawn enemies periodically
+  // spawn enemies
   if(Math.random()<0.02) spawnEnemy();
 
-  // update HUD
-  hudScore.innerText=score;
+  // HUD update
   hudHP.innerText=player.lives+'/'+player.maxLives;
   hudXP.innerText=player.xp+' / '+player.xpGoal;
 }
 
+/* --- Draw --- */
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
@@ -142,30 +179,28 @@ function draw(){
   ctx.drawImage(playerImg,player.x-player.width/2,player.y-player.height/2,player.width,player.height);
 
   // bullets
-  ctx.fillStyle='#ffec5c';
-  bullets.forEach(b=>ctx.fillRect(b.x,b.y,b.w,b.h));
+  bullets.forEach(b=>ctx.drawImage(bulletImg,b.x,b.y,b.w,b.h));
 
   // enemies
-  ctx.fillStyle='#ff6b6b';
-  enemies.forEach(e=>ctx.fillRect(e.x,e.y,e.w,e.h));
-
-  // enemy HP bars
-  enemies.forEach(e=>{
-    ctx.fillStyle='#222'; ctx.fillRect(e.x,e.y-6,e.w,4);
-    ctx.fillStyle='#6eff9f'; ctx.fillRect(e.x,e.y-6,e.w*(e.hp/e.maxHp),4);
-  });
+  enemies.forEach(e=>ctx.drawImage(enemyImg,e.x,e.y,e.w,e.h));
 }
 
-function loop(){
-  update();
-  draw();
-  requestAnimationFrame(loop);
-}
+function loop(){ update(); draw(); requestAnimationFrame(loop); }
 
+/* --- Start game --- */
 document.getElementById('playBtn').onclick=()=>{
   document.getElementById('menu').style.display='none';
   loop();
 };
+
+/* --- Settings --- */
+const settingsPanel = document.getElementById('settingsPanel');
+const soundToggle = document.getElementById('soundToggle');
+const resetProgress = document.getElementById('resetProgress');
+
+settingsPanel.style.display='block'; // panel visible for demo
+soundToggle.onchange = ()=>{ console.log('Sound toggle:', soundToggle.checked); };
+resetProgress.onclick = ()=>{ if(confirm('Reset?')){ location.reload(); } };
 </script>
 
 </body>
